@@ -1,0 +1,13 @@
+{
+    "minimum-stability": "dev",
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/onpayio/php-sdk"
+        }
+    ],
+    "require": {
+        "onpayio/php-sdk": "dev-task/change_oauth_client",
+        "alcohol/iso4217": "^3.1"
+    }
+}
