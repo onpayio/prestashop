@@ -40,6 +40,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL = 'ONPAY_EXTRA_PAYMENTS_VIABILL';
     const SETTING_ONPAY_EXTRA_PAYMENTS_CARD = 'ONPAY_EXTRA_PAYMENTS_CARD';
     const SETTING_ONPAY_PAYMENTWINDOW_DESIGN = 'ONPAY_PAYMENTWINDOW_DESIGN';
+    const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE = 'ONPAY_PAYMENTWINDOW_LANGUAGE';
     const SETTING_ONPAY_TOKEN = 'ONPAY_TOKEN';
     const SETTING_ONPAY_TESTMODE = 'ONPAY_TESTMODE_ENABLED';
 
@@ -178,69 +179,31 @@ class onpay extends PaymentModule {
             }
 
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
-                $cardPaymentWindow = $this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency);
                 $cardOption = new PaymentOption();
                 $cardOption->setModuleName($this->name)
                     ->setCallToActionText($this->trans('Pay with credit card', array(), 'Modules.Onpay.Shop'))
-                    ->setAction($cardPaymentWindow->getActionUrl())
-                    ->setForm($this->renderPaymentWindowForm($cardPaymentWindow));
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency)));
                 $payment_options[] = $cardOption;
             }
 
-//            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
-//                $vbOption = new PaymentOption();
-//                $vbOption->setModuleName($this->name)
-//                    ->setCallToActionText($this->trans('Pay through ViaBill', array(), 'Modules.Onpay.Shop'));
-////                    ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
-////                    ->setAdditionalInformation($this->fetch('module:onpay/views/templates/hook/payment.tpl'));
-//                $payment_options[] = $vbOption;
-//            }
-//
-//            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)) {
-//                $mpoOption = new PaymentOption();
-//                $mpoOption->setModuleName($this->name)
-//                    ->setCallToActionText($this->trans('Pay through MobilePay', array(), 'Modules.Onpay.Shop'));
-////                    ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
-////                    ->setAdditionalInformation($this->fetch('module:onpay/views/templates/hook/payment.tpl'));
-//                $payment_options[] = $mpoOption;
-//            }
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
+                $vbOption = new PaymentOption();
+                $vbOption->setModuleName($this->name)
+                    ->setCallToActionText($this->trans('Pay through ViaBill', array(), 'Modules.Onpay.Shop'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency)));
+                $payment_options[] = $vbOption;
+            }
+
+            // Mobilepay is not available in testmode
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
+                $mpoOption = new PaymentOption();
+                $mpoOption->setModuleName($this->name)
+                    ->setCallToActionText($this->trans('Pay through MobilePay', array(), 'Modules.Onpay.Shop'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency)));
+                $payment_options[] = $mpoOption;
+            }
 
             return $payment_options;
-
-//            $cardPaymentWindow = $this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency);
-//            $actionUrl = $cardPaymentWindow->getActionUrl();
-//            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
-//                $cardWindowFields = $cardPaymentWindow->getFormFields();
-//            } else {
-//                $cardWindowFields = [];
-//            }
-//
-//            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
-//                $viaBillWindowFields = $this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency)->getFormFields();
-//            } else {
-//                $viaBillWindowFields = [];
-//            }
-//
-//            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)) {
-//                $mobilePayWindowFields = $this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency)->getFormFields();
-//            } else {
-//                $mobilePayWindowFields = [];
-//            }
-//
-//            $this->smarty->assign(array(
-//                'this_path' => $this->_path,
-//                'this_path_bw' => $this->_path,
-//                'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/',
-//                'viabill' => Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL),
-//                'viabill_fields' > $viaBillWindowFields,
-//                'mobilepay' => Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY),
-//                'mobilepay_fields' => $mobilePayWindowFields,
-//                'card' => Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD),
-//                'card_fields' => $cardWindowFields,
-//                'actionUrl' => $actionUrl,
-//            ));
-//
-//            return $this->display(__FILE__, 'views/hook/payment.tpl');
         }
         return;
     }
@@ -306,10 +269,14 @@ class onpay extends PaymentModule {
             $paymentWindow->setDesign(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
         }
 
+        if(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)) {
+            $paymentWindow->setLanguage(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
+        }
+
         // Set payment method
         $paymentWindow->setMethod($payment);
-        // Enable testmode
 
+        // Enable testmode
         if(Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
             $paymentWindow->setTestMode(1);
         } else {
@@ -320,20 +287,12 @@ class onpay extends PaymentModule {
     }
 
     private function renderPaymentWindowForm(\OnPay\API\PaymentWindow $paymentWindow) {
-        $form = [
-            'form' => [
-                'input' => [
-                    [
-                        'type' => 'hidden',
-                        'name' => 'gatewayId',
-                        'data' => $paymentWindow->getGatewayId(),
-                    ],
-                ]
-            ]
-        ];
-
-        $helper = new FormField();
-        return $helper->generateForm($form);
+        $this->smarty->assign(array(
+            'form_action' => $paymentWindow->getActionUrl(),
+            'form_fields' => $paymentWindow->getFormFields(),
+            'this_path' => $this->_path,
+        ));
+        return $this->display(__FILE__, 'views/templates/front/payment.tpl');
     }
 
     /**
@@ -407,6 +366,17 @@ class onpay extends PaymentModule {
                             'id' => 'id_option',
                             'name' => 'name'
                         )
+                    ),
+                    array(
+                        'type' => 'select',
+                        'lang' => true,
+                        'label' => $this->l('Payment window language'),
+                        'name' => 'ONPAY_PAYMENTWINDOW_LANGUAGE',
+                        'options' => [
+                            'query'=> $this->getPaymentWindowLanguageOptions(),
+                            'id' => 'id_option',
+                            'name' => 'name',
+                        ]
                     ),
                     array(
                         'type' => 'text',
@@ -485,6 +455,12 @@ class onpay extends PaymentModule {
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
             }
+
+            if(Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) === 'ONPAY_PAYMENTWINDOW_LANGUAGE') {
+                Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, false);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
+            }
         }
         $this->htmlContent .= $this->displayConfirmation($this->l('Settings updated'));
     }
@@ -502,6 +478,7 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)),
             self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)),
+            self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)),
             self::SETTING_ONPAY_TESTMODE => Tools::getValue(self::SETTING_ONPAY_TESTMODE, Configuration::get(self::SETTING_ONPAY_TESTMODE)),
         );
     }
@@ -514,7 +491,6 @@ class onpay extends PaymentModule {
      * @throws \OnPay\API\Exception\ConnectionException
      */
     private function getPaymentWindowDesignOptions() {
-
         try {
             $this->getOnpayClient();
         } catch (InvalidArgumentException $exception) {
@@ -543,6 +519,60 @@ class onpay extends PaymentModule {
         }
 
         return $selectOptions;
+    }
+
+    /**
+     * Returns a prepared list of available payment window languages
+     *
+     * @return array
+     */
+    private function getPaymentWindowLanguageOptions() {
+        return [
+            [
+                'name' => $this->l('English'),
+                'id_option' => 'en',
+            ],
+            [
+                'name' => $this->l('Danish'),
+                'id_option' => 'da',
+            ],
+            [
+                'name' => $this->l('Dutch'),
+                'id_option' => 'nl',
+            ],
+            [
+                'name' => $this->l('Faroese'),
+                'id_option' => 'fo',
+            ],
+            [
+                'name' => $this->l('French'),
+                'id_option' => 'fr',
+            ],
+            [
+                'name' => $this->l('German'),
+                'id_option' => 'de',
+            ],
+            [
+                'name' => $this->l('Italian'),
+                'id_option' => 'it',
+            ],
+            [
+                'name' => $this->l('Norwegian'),
+                'id_option' => 'no',
+            ],
+            [
+                'name' => $this->l('Polish'),
+                'id_option' => 'pl',
+            ],
+            [
+                'name' => $this->l('Spanish'),
+                'id_option' => 'es',
+            ],
+            [
+                'name' => $this->l('Swedish'),
+                'id_option' => 'sv',
+            ],
+        ];
     }
 
     /**
