@@ -23,16 +23,16 @@
 *
 *}
 
-{capture name=path}{l s='Payment failure' mod='onpay'}{/capture}
-<h1 class="page-heading">{l s='The payment failed' mod='onpay'}</h1>
+{extends file='page.tpl'}
+{block name='page_content'}
+    {capture name=path}{l s='Payment failure' mod='onpay'}{/capture}
+    <h1 class="page-heading">{l s='The payment failed' mod='onpay'}</h1>
+    <br/>
+    <p class="alert alert-warning">{l s='The payment of the order failed, please try again.' mod='onpay'}</p>
 
-{assign var='current_step' value='payment'}
-{include file="$tpl_dir./order-steps.tpl"}
-
-<p class="alert alert-warning">{l s='The payment of the order failed, please try again.' mod='onpay'}</p>
-
-<p class="cart_navigation clearfix">
-    <a class="button-exclusive btn btn-default btn-lg" href="{$link->getPageLink('order&step=3', true)|escape:'html':'UTF-8'}" title="{l s='Go back to payment method' mod='onpay'}">
-        <i class="icon-chevron-left"></i>{l s='Go back to payment method' mod='onpay'}
-    </a>
-</p>
+    <p class="cart_navigation clearfix">
+        <a class="button-exclusive btn btn-primary btn-lg" href="{$link->getPageLink('order&step=3', true)|escape:'html':'UTF-8'}" title="{l s='Go back to payment method' mod='onpay'}">
+            <i class="icon-chevron-left"></i>{l s='Go back to payment method' mod='onpay'}
+        </a>
+    </p>
+{/block}
