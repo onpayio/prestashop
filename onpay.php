@@ -68,7 +68,7 @@ class onpay extends PaymentModule {
         $this->ps_versions_compliancy = array('min' => '1.7.6.1', 'max' => _PS_VERSION_);
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
-        $this->controllers = array('payment', 'validation');
+        $this->controllers = array('payment', 'callback');
         $this->is_eu_compatible = 1;
 
         $this->bootstrap = true;
@@ -81,7 +81,12 @@ class onpay extends PaymentModule {
     }
 
     public function install() {
-        if (!parent::install() || !$this->registerHook('paymentReturn') || !$this->registerHook('paymentOptions')) {
+        if (
+            !parent::install() ||
+            !$this->registerHook('paymentReturn') ||
+            !$this->registerHook('paymentOptions') ||
+            !$this->registerHook('adminOrder')
+        ) {
             return false;
         }
         return true;
@@ -208,6 +213,125 @@ class onpay extends PaymentModule {
         return;
     }
 
+    /**
+     * Actions on order page
+     * @param $params
+     * @return mixed
+     */
+    public function hookAdminOrder($params)
+    {
+        $this->hookHeader();
+        $order = new Order($params['id_order']);
+        $payments = $order->getOrderPayments();
+
+        $onPayAPI = $this->getOnpayClient();
+
+        if (!$onPayAPI->isAuthorized()) {
+            return;
+        }
+
+        if(Tools::isSubmit('onpayCapture')) {
+            foreach ($payments as $payment) {
+                try {
+                    $onPayAPI->transaction()->captureTransaction($payment->transaction_id);
+                    $this->context->controller->confirmations[] = $this->l("Captured transaction");
+                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->errors[] = Tools::displayError($this->l('Could not capture payment'));
+                }
+            }
+        }
+
+        if(Tools::isSubmit('onpayCancel')) {
+            foreach ($payments as $payment) {
+                try {
+                    $onPayAPI->transaction()->cancelTransaction($payment->transaction_id);
+                    $this->context->controller->confirmations[] = $this->l("Cancelled transaction");
+                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->errors[] = Tools::displayError($this->l('Could not cancel transaction'));
+                }
+            }
+        }
+
+        if(Tools::isSubmit('refund_value')) {
+            foreach ($payments as $payment) {
+                try {
+                    $value = Tools::getValue('refund_value');
+                    $currency = Tools::getValue('refund_currency');
+                    $value = str_replace('.', ',', $value);
+                    $amount = $this->currencyHelper->majorToMinor($value, $currency, ',');
+                    $onPayAPI->transaction()->refundTransaction($payment->transaction_id, $amount);
+                    $this->context->controller->confirmations[] = $this->l("Refunded transaction");
+                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->errors[] = Tools::displayError($this->l('Could not refund transaction'));
+                }
+            }
+        }
+
+        if(Tools::isSubmit('onpayCapture_value')) {
+            foreach ($payments as $payment) {
+                try {
+                    $value = Tools::getValue('onpayCapture_value');
+                    $currency = Tools::getValue('onpayCapture_currency');
+                    $value = str_replace('.', ',', $value);
+                    $amount = $this->currencyHelper->majorToMinor($value, $currency, ',');
+                    $onPayAPI->transaction()->captureTransaction($payment->transaction_id, $amount);
+                    $this->context->controller->confirmations[] = $this->l("Captured transaction");
+                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->errors[] = Tools::displayError($this->l('Could not capture transaction'));
+                }
+            }
+        }
+
+        $details = [];
+
+        try {
+            foreach ($payments as $payment) {
+                $onpayInfo = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
+                $amount  = $this->currencyHelper->minorToMajor($onpayInfo->amount, $onpayInfo->currencyCode, ',');
+                $chargable = $onpayInfo->amount - $onpayInfo->charged;
+                $chargable = $this->currencyHelper->minorToMajor($chargable, $onpayInfo->currencyCode, ',');
+                $refunded = $this->currencyHelper->minorToMajor($onpayInfo->refunded, $onpayInfo->currencyCode, ',');
+                $charged = $this->currencyHelper->minorToMajor($onpayInfo->charged, $onpayInfo->currencyCode, ',');
+
+                $currencyCode = $onpayInfo->currencyCode;
+
+                array_walk($onpayInfo->history, function(\OnPay\API\Transaction\TransactionHistory $history) use($currencyCode) {
+                    $amount = $history->amount;
+                    $amount = $this->currencyHelper->minorToMajor($amount, $currencyCode, ',');
+                    $history->amount = $amount;
+                });
+
+                $refundable = $onpayInfo->charged - $onpayInfo->refunded;
+                $refundable = $this->currencyHelper->minorToMajor($refundable, $onpayInfo->currencyCode,',');
+                $details[] = [
+                    'details' => ['amount' => $amount, 'chargeable' => $chargable, 'refunded' => $refunded, 'charged' => $charged, 'refundable' => $refundable],
+                    'payment' => $payment,
+                    'onpay' => $onpayInfo,
+                ];
+            }
+        } catch (\OnPay\API\Exception\ApiException $exception) {
+            // If there was problems, we'll show the same as someone with an unauthed acc
+            $this->smarty->assign(array(
+                'paymentdetails' => $details,
+                'url' => '',
+                'isAuthorized' => false,
+                'currencyDetails' => '',
+                'this_path' => $this->_path,
+            ));
+            return $this->display(__FILE__, 'views/admin/order_details.tpl');
+        }
+
+        $url = $_SERVER['REQUEST_URI'];
+        $this->smarty->assign(array(
+            'paymentdetails' => $details,
+            'url' => $url,
+            'isAuthorized' => $this->getOnpayClient()->isAuthorized(),
+            'currencyDetails' => new Currency($payments[0]->id_currency),
+            'this_path' => $this->_path,
+        ));
+        return $this->display(__FILE__, 'views/admin/order_details.tpl');
+    }
+
 
     /**
      * Utilities
@@ -290,7 +414,6 @@ class onpay extends PaymentModule {
         $this->smarty->assign(array(
             'form_action' => $paymentWindow->getActionUrl(),
             'form_fields' => $paymentWindow->getFormFields(),
-            'this_path' => $this->_path,
         ));
         return $this->display(__FILE__, 'views/templates/front/payment.tpl');
     }
