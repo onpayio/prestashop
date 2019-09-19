@@ -93,7 +93,18 @@ class onpay extends PaymentModule {
     }
 
     public function uninstall() {
-        if (parent::uninstall() == false) {
+        if (
+            parent::uninstall() == false ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_GATEWAY_ID) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_SECRET) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE)
+        ) {
             return false;
         }
         return true;
