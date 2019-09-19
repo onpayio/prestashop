@@ -29,22 +29,19 @@
 class OnpayPaymentModuleFrontController extends ModuleFrontController
 {
     public $ssl = true;
-    public $display_column_left = false;
 
     public function initContent()
     {
         parent::initContent();
-
-//        $this->context->smarty->assign([
-//            'HOOK_LEFT_COLUMN' => $this->hookDisplayLeftColumn(),
-//        ]);
-
         // If we're not redirecting the customer in postProcess on successful payment, we'll default to the declined template.
-//        $this->setTemplate('payment_decline.tpl');
+        $this->setTemplate('module:onpay/views/templates/front/payment_decline.tpl');
     }
 
-    public function postProcess()
-    {
+    public function postProcess() {
+        if (!Tools::getValue('onpay_hmac_sha1')) {
+            return;
+        }
+
         $paymentWindow = new \OnPay\API\PaymentWindow();
         $paymentWindow->setSecret(Configuration::get('ONPAY_SECRET'));
 
@@ -62,13 +59,8 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
                     'id_module' => (int)$this->module->id,
                     'key' => $customer->secure_key
                 ]));
-//                Tools::redirect('index.php?controller=order-confirmation&id_cart=' . $cart->id . '&id_module=' . (int)$this->module->id . '&key=' . $customer->secure_key . '&status=' . $status);
+                Tools::redirect('index.php?controller=order-confirmation&id_cart=' . $cart->id . '&id_module=' . (int)$this->module->id . '&key=' . $customer->secure_key . '&status=' . $status);
             }
         }
-    }
-
-    public function hookDisplayLeftColumn() {
-        // We don't want any left column hooks showing on this page.
-        return false;
     }
 }
