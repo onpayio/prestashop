@@ -71,7 +71,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $cart->id,
             Configuration::get('PS_OS_PAYMENT'),
             $total,
-            $this->module->displayName,
+            'OnPay',
             null,
             [
                 'transaction_id' => Tools::getValue('onpay_uuid'),
