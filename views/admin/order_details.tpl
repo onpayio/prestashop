@@ -24,13 +24,12 @@
 *}
 
 {if $isAuthorized}
-    <div class="panel">
-        <div class="panel-heading">
-            <img src="{$this_path}/logo.png" height="14"/> Onpay - {l s='Transaction details' mod='onpay'}
-        </div>
-        <div class="onpay-body">
-
-            {foreach from=$paymentdetails item=payment }
+    {foreach from=$paymentdetails item=payment }
+        <div class="panel">
+            <div class="panel-heading">
+                <img src="{$this_path}/logo.png" height="14"/> Onpay - {l s='Transaction details' mod='onpay'}
+            </div>
+            <div class="onpay-body">
                 <div class="row">
                     <div class="col-md-6">
                         {if $payment['onpay']->acquirer eq 'test'}
@@ -56,20 +55,24 @@
                                 <td>{$payment['onpay']->transactionNumber}</td>
                             </tr>
                             <tr>
+                                <td><strong>{l s='Transaction ID' mod='onpay'}</strong></td>
+                                <td>{$payment['onpay']->uuid}</td>
+                            </tr>
+                            <tr>
                                 <td><strong>{l s='IP' mod='onpay'}</strong></td>
                                 <td>{$payment['onpay']->ip}</td>
                             </tr>
                             <tr>
                                 <td><strong>{l s='Amount' mod='onpay'}</strong></td>
-                                <td>{$payment['details']['amount']} {$currencyDetails->suffix}</td>
+                                <td>{$payment['details']['amount']} {$payment['details']['currency']->alpha3}</td>
                             </tr>
                             <tr>
                                 <td><strong>{l s='Charged' mod='onpay'}</strong></td>
-                                <td>{$payment['details']['charged']} {$currencyDetails->suffix}</td>
+                                <td>{$payment['details']['charged']} {$payment['details']['currency']->alpha3}</td>
                             </tr>
                             <tr>
                                 <td><strong>{l s='Refunded' mod='onpay'}</strong></td>
-                                <td>{$payment['details']['refunded']} {$currencyDetails->suffix}</td>
+                                <td>{$payment['details']['refunded']} {$payment['details']['currency']->alpha3}</td>
                             </tr>
                             </tbody>
                         </table>
@@ -127,7 +130,7 @@
                                 <tr>
                                     <td>{$history->dateTime->format('Y-m-d H:i:s')}</td>
                                     <td>{$history->action}</td>
-                                    <td>{$history->amount} {$currencyDetails->suffix}</td>
+                                    <td>{$history->amount} {$payment['details']['currency']->alpha3}</td>
                                     <td>{$history->author}</td>
                                     <td>{$history->ip}</td>
                                 </tr>
@@ -198,8 +201,7 @@
                     </div>
                 </div>
                 <!-- Capture window -->
-
-            {/foreach}
+            </div>
         </div>
-    </div>
+    {/foreach}
 {/if}
