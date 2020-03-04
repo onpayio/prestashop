@@ -1,6 +1,6 @@
 {
     "require": {
-        "onpayio/php-sdk": "1.0.2",
+        "onpayio/php-sdk": "1.0.5",
         "alcohol/iso4217": "^3.1"
     }
 }
