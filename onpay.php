@@ -74,9 +74,9 @@ class onpay extends PaymentModule {
         $this->bootstrap = true;
         parent::__construct();
 
-        $this->displayName = $this->trans('OnPay', [], 'Modules.Onpay.Admin');
-        $this->description = $this->trans('Use OnPay.io for handling payments', [], 'Modules.Onpay.Admin');
-        $this->confirmUninstall = $this->trans('Are you sure about uninstalling the OnPay.io module?', [], 'Modules.Onpay.Admin');
+        $this->displayName = $this->l('OnPay');
+        $this->description = $this->l('Use OnPay.io for handling payments');
+        $this->confirmUninstall = $this->l('Are you sure about uninstalling the OnPay.io module?');
         $this->currencyHelper = new CurrencyHelper();
     }
 
@@ -197,7 +197,7 @@ class onpay extends PaymentModule {
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
                 $cardOption = new PaymentOption();
                 $cardOption->setModuleName($this->name)
-                    ->setCallToActionText($this->trans('Pay with credit card', array(), 'Modules.Onpay.Shop'))
+                    ->setCallToActionText($this->l('Pay with credit card'))
                     ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency)));
                 $payment_options[] = $cardOption;
             }
@@ -205,7 +205,7 @@ class onpay extends PaymentModule {
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
                 $vbOption = new PaymentOption();
                 $vbOption->setModuleName($this->name)
-                    ->setCallToActionText($this->trans('Pay through ViaBill', array(), 'Modules.Onpay.Shop'))
+                    ->setCallToActionText($this->l('Pay through ViaBill'))
                     ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency)));
                 $payment_options[] = $vbOption;
             }
@@ -214,7 +214,7 @@ class onpay extends PaymentModule {
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
                 $mpoOption = new PaymentOption();
                 $mpoOption->setModuleName($this->name)
-                    ->setCallToActionText($this->trans('Pay through MobilePay', array(), 'Modules.Onpay.Shop'))
+                    ->setCallToActionText($this->l('Pay through MobilePay'))
                     ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency)));
                 $payment_options[] = $mpoOption;
             }
