@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2020-05-06
+- Fixed when trying to translate strings, some strings ended up weird places in regards to translation domain. (PR #7)
+- Fixed some legacy hook templates never used in this module, presented translation options never seen. (PR #7)
+- Added function that allows to automatically determine onpay payment window language by frontoffice language currently selected by user. (PR #7)
+
 ## [1.0.2] - 2020-03-04
 - Updated version of OnPay php SDK to the latest version. 1.0.5
 
