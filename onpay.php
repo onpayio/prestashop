@@ -41,6 +41,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_EXTRA_PAYMENTS_CARD = 'ONPAY_EXTRA_PAYMENTS_CARD';
     const SETTING_ONPAY_PAYMENTWINDOW_DESIGN = 'ONPAY_PAYMENTWINDOW_DESIGN';
     const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE = 'ONPAY_PAYMENTWINDOW_LANGUAGE';
+    const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO = 'ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO';
     const SETTING_ONPAY_TOKEN = 'ONPAY_TOKEN';
     const SETTING_ONPAY_TESTMODE = 'ONPAY_TESTMODE_ENABLED';
 
@@ -102,6 +103,7 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE)
         ) {
@@ -404,7 +406,9 @@ class onpay extends PaymentModule {
             $paymentWindow->setDesign(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
         }
 
-        if(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)) {
+        if (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)) {
+            $paymentWindow->setLanguage($this->getPaymentWindowLanguageByPSLanguage($this->context->language->iso_code));
+        } else if (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)) {
             $paymentWindow->setLanguage(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
         }
 
@@ -494,7 +498,7 @@ class onpay extends PaymentModule {
                         'type' => 'select',
                         'lang' => true,
                         'label' => $this->l('Payment window design'),
-                        'name' => 'ONPAY_PAYMENTWINDOW_DESIGN',
+                        'name' => self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN,
                         'options' => array(
                             'query' => $this->getPaymentWindowDesignOptions(),
                             'id' => 'id_option',
@@ -505,7 +509,7 @@ class onpay extends PaymentModule {
                         'type' => 'select',
                         'lang' => true,
                         'label' => $this->l('Payment window language'),
-                        'name' => 'ONPAY_PAYMENTWINDOW_LANGUAGE',
+                        'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE,
                         'options' => [
                             'query'=> $this->getPaymentWindowLanguageOptions(),
                             'id' => 'id_option',
@@ -513,18 +517,36 @@ class onpay extends PaymentModule {
                         ]
                     ),
                     array(
+                        'type' => 'switch',
+                        'label' => $this->l('Automatic payment window language'),
+                        'desc' => $this->l('Overrides language chosen above, and instead determines payment window language based on frontoffice language'),
+                        'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO,
+                        'required' => false,
+                        'values'=>[
+                            array(
+                                'id' => 'ENABLED',
+                                'value' => '1',
+                            ),
+                            array(
+                                'id' => 'DISABLED',
+                                'value' => false
+                            )
+                        ]
+
+                    ),
+                    array(
                         'type' => 'text',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Gateway ID'),
-                        'name' => 'ONPAY_GATEWAY_ID',
+                        'name' => self::SETTING_ONPAY_GATEWAY_ID,
                     ),
                     array(
                         'type' => 'text',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Window secret'),
-                        'name' => 'ONPAY_SECRET',
+                        'name' => self::SETTING_ONPAY_SECRET,
                     ),
                 ),
                 'submit' => array(
@@ -595,6 +617,12 @@ class onpay extends PaymentModule {
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
             }
+
+            if(Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) === 'ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO') {
+                Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, false);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO));
+            }
         }
         $this->htmlContent .= $this->displayConfirmation($this->l('Settings updated'));
     }
@@ -613,6 +641,7 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)),
             self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)),
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)),
+            self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)),
             self::SETTING_ONPAY_TESTMODE => Tools::getValue(self::SETTING_ONPAY_TESTMODE, Configuration::get(self::SETTING_ONPAY_TESTMODE)),
         );
     }
@@ -707,6 +736,33 @@ class onpay extends PaymentModule {
                 'id_option' => 'sv',
             ],
         ];
+    }
+
+    // Returns valid OnPay payment window language by Prestashop language iso
+    private function getPaymentWindowLanguageByPSLanguage($languageIso) {
+        $languageRelations = [
+            'en' => 'en',
+            'es' => 'es',
+            'da' => 'da',
+            'de' => 'de',
+            'fo' => 'fo',
+            'fr' => 'fr',
+            'it' => 'it',
+            'nl' => 'nl',
+            'no' => 'no',
+            'pl' => 'pl',
+            'sv' => 'sv',
+
+            'us' => 'en', // Incase of mixup
+            'nb' => 'no', // Incase use of archaic language definition
+            'nn' => 'no', // Incase use of archaic language definition
+            'dk' => 'da', // Incase of mixup
+            'kl' => 'da', // Incase of Kalaallisut/Greenlandic
+        ];
+        if (array_key_exists($languageIso, $languageRelations)) {
+            return $languageRelations[$languageIso];
+        }
+        return 'en';
     }
 
     /**
