@@ -25,7 +25,7 @@
 
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/require.php';
 require_once __DIR__ . '/classes/CurrencyHelper.php';
 require_once __DIR__ . '/classes/TokenStorage.php';
 
