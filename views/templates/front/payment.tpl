@@ -24,24 +24,7 @@
 *}
 
 <form method="post" action="{$form_action}" id="onpayForm">
-    <input type="hidden" name="onpay_gatewayid" value="{$form_fields['onpay_gatewayid']}">
-    <input type="hidden" name="onpay_currency" value="{$form_fields['onpay_currency']}">
-    <input type="hidden" name="onpay_amount" value="{$form_fields['onpay_amount']}">
-    <input type="hidden" name="onpay_reference" value="{$form_fields['onpay_reference']}">
-    <input type="hidden" name="onpay_accepturl" value="{$form_fields['onpay_accepturl']}">
-    <input type="hidden" name="onpay_type" value="{$form_fields['onpay_type']}">
-    <input type="hidden" name="onpay_method" value="{$form_fields['onpay_method']}">
-    <input type="hidden" name="onpay_declineurl" value="{$form_fields['onpay_declineurl']}">
-    <input type="hidden" name="onpay_callbackurl" value="{$form_fields['onpay_callbackurl']}">
-    <input type="hidden" name="onpay_testmode" value="{$form_fields['onpay_testmode']}">
-
-    {if array_key_exists('onpay_design', $form_fields)}
-        <input type="hidden" name="onpay_design" value="{$form_fields['onpay_design']}">
-    {/if}
-
-    {if array_key_exists('onpay_language', $form_fields)}
-        <input type="hidden" name="onpay_language" value="{$form_fields['onpay_language']}">
-    {/if}
-
-    <input type="hidden" name="onpay_hmac_sha1" value="{$form_fields['onpay_hmac_sha1']}">
+    {foreach from=$form_fields key=field item=value}
+        <input type="hidden" name="{$field}" value="{$value}">
+    {/foreach}
 </form>
