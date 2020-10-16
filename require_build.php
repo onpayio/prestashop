@@ -15,11 +15,13 @@ class_alias('PrestashopOnpay\OnPay\TokenStorageInterface', 'OnPay\TokenStorageIn
 
 class_alias('PrestashopOnpay\OnPay\API\GatewayService', 'OnPay\API\GatewayService');
 class_alias('PrestashopOnpay\OnPay\API\PaymentWindow', 'OnPay\API\PaymentWindow');
+class_alias('PrestashopOnpay\OnPay\API\PaymentWindow\PaymentInfo', 'OnPay\API\PaymentWindow\PaymentInfo');
 class_alias('PrestashopOnpay\OnPay\API\SubscriptionService', 'OnPay\API\SubscriptionService');
 class_alias('PrestashopOnpay\OnPay\API\TransactionService', 'OnPay\API\TransactionService');
 
 class_alias('PrestashopOnpay\OnPay\API\Exception\ApiException', 'OnPay\API\Exception\ApiException');
 class_alias('PrestashopOnpay\OnPay\API\Exception\ConnectionException', 'OnPay\API\Exception\ConnectionException');
+class_alias('PrestashopOnpay\OnPay\API\Exception\InvalidFormatException', 'OnPay\API\Exception\InvalidFormatException');
 class_alias('PrestashopOnpay\OnPay\API\Exception\TokenException', 'OnPay\API\Exception\TokenException');
 
 class_alias('PrestashopOnpay\OnPay\API\Gateway\Information', 'OnPay\API\Gateway\Information');

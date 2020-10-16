@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5a6458e1c75204cb9a183f625b3fba61",
+    "content-hash": "8bf6d22af5ebd23c2d81758b72c1d3b5",
     "packages": [
         {
             "name": "alcohol/iso4217",
@@ -60,12 +60,18 @@
             "time": "2019-10-30T10:03:42+00:00"
         },
         {
-            "name": "fkooman/oauth2-client",
-            "version": "7.1.3",
+            "name": "onpayio/oauth2-client",
+            "version": "7.2.0",
             "source": {
                 "type": "git",
-                "url": "https://git.tuxed.net/fkooman/php-oauth2-client",
-                "reference": "3d96587ed78b1ecd72085847cae779b6edeb4526"
+                "url": "https://github.com/onpayio/php-oauth2-client.git",
+                "reference": "e97fd6d5868a1ca9af715ae83d1991b4f880745f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/onpayio/php-oauth2-client/zipball/e97fd6d5868a1ca9af715ae83d1991b4f880745f",
+                "reference": "e97fd6d5868a1ca9af715ae83d1991b4f880745f",
+                "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
@@ -77,13 +83,13 @@
                 "ext-session": "*",
                 "ext-spl": "*",
                 "paragonie/constant_time_encoding": "^1|^2",
-                "paragonie/random_compat": "^1|^2",
+                "paragonie/random_compat": ">=1",
                 "php": ">=5.4",
                 "psr/log": "^1.0",
                 "symfony/polyfill-php56": "^1"
             },
             "require-dev": {
-                "phpunit/phpunit": "^4.8.35|^5|^6"
+                "phpunit/phpunit": "^4.8.35|^5|^6|^7"
             },
             "type": "library",
             "autoload": {
@@ -102,25 +108,25 @@
                 }
             ],
             "description": "Very simple OAuth 2.0 client",
-            "abandoned": true,
-            "time": "2018-06-02T00:36:19+00:00"
+            "time": "2020-04-25T09:56:27+00:00"
         },
         {
             "name": "onpayio/php-sdk",
-            "version": "1.0.5",
+            "version": "1.0.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/onpayio/php-sdk.git",
-                "reference": "bac5d493800dcebfd4a4b8707b4bc9ea1e09cf5a"
+                "reference": "bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/bac5d493800dcebfd4a4b8707b4bc9ea1e09cf5a",
-                "reference": "bac5d493800dcebfd4a4b8707b4bc9ea1e09cf5a",
+                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1",
+                "reference": "bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1",
                 "shasum": ""
             },
             "require": {
-                "fkooman/oauth2-client": "^7.1",
+                "ext-json": "*",
+                "onpayio/oauth2-client": "^7.1",
                 "php": ">=5.6"
             },
             "type": "library",
@@ -135,7 +141,7 @@
             ],
             "description": "PHP SDK for OnPay.io API",
             "homepage": "https://github.com/onpayio/php-sdk",
-            "time": "2020-02-26T07:58:29+00:00"
+            "time": "2020-10-01T08:24:30+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
@@ -439,9 +445,7 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": {
-        "php": ">=5.6"
-    },
+    "platform": [],
     "platform-dev": [],
     "platform-overrides": {
         "php": "5.6"
