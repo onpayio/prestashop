@@ -379,7 +379,6 @@ class onpay extends PaymentModule {
 
     /**
      * Generates payment window object for use on the payment page
-     * @param $orderTotal
      * @param $order
      * @param $payment
      * @param $currency
@@ -415,6 +414,52 @@ class onpay extends PaymentModule {
         // Set payment method
         $paymentWindow->setMethod($payment);
 
+        // Add additional info
+        $customer = new Customer($order->id_customer);
+
+        $invoice_address = new Address($order->id_address_invoice);
+        $invoice_country = new Country($invoice_address->id_country);
+        $invoice_state = new State($invoice_address->id_state);
+
+        $delivery_address = new Address($order->id_address_invoice);
+        $delivery_country = new Country($delivery_address->id_country);
+        $delivery_state = new State($delivery_address->id_state);
+
+        $paymentInfo = new \OnPay\API\PaymentWindow\PaymentInfo();
+
+        $this->setPaymentInfoParameter($paymentInfo, 'AccountId', $customer->id);
+        $this->setPaymentInfoParameter($paymentInfo, 'AccountDateCreated', date('Y-m-d', strtotime($customer->date_add)));
+        $this->setPaymentInfoParameter($paymentInfo, 'AccountDateChange', date('Y-m-d', strtotime($customer->date_upd)));
+        $this->setPaymentInfoParameter($paymentInfo, 'AccountDatePasswordChange', date('Y-m-d', strtotime($customer->last_passwd_gen)));
+        $this->setPaymentInfoParameter($paymentInfo, 'AccountShippingFirstUseDate', date('Y-m-d', strtotime($delivery_address->date_add)));
+
+        if ($invoice_address->id === $delivery_address->id) {
+            $this->setPaymentInfoParameter($paymentInfo, 'AccountShippingIdenticalName', 'Y');
+            $this->setPaymentInfoParameter($paymentInfo, 'AddressIdenticalShipping', 'Y');
+        }
+
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressCity', $invoice_address->city);
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressCountry', $invoice_country->iso_code);
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressLine1', $invoice_address->address1);
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressLine2', $invoice_address->address2);
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressPostalCode', $invoice_address->postcode);
+        $this->setPaymentInfoParameter($paymentInfo, 'BillingAddressState', $invoice_state->iso_code);
+
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressCity', $delivery_address->city);
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressCountry', $delivery_country->iso_code);
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressLine1', $delivery_address->address1);
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressLine2', $delivery_address->address2);
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressPostalCode', $delivery_address->postcode);
+        $this->setPaymentInfoParameter($paymentInfo, 'ShippingAddressState', $delivery_state->iso_code);
+
+        $this->setPaymentInfoParameter($paymentInfo, 'Name', $customer->firstname . ' ' . $customer->lastname);
+        $this->setPaymentInfoParameter($paymentInfo, 'Email', $customer->email);
+        $this->setPaymentInfoParameter($paymentInfo, 'PhoneHome',  [null, $invoice_address->phone]);
+        $this->setPaymentInfoParameter($paymentInfo, 'PhoneMobile', [null, $invoice_address->phone_mobile]);
+        $this->setPaymentInfoParameter($paymentInfo, 'DeliveryEmail', $customer->email);
+
+        $paymentWindow->setInfo($paymentInfo);
+
         // Enable testmode
         if(Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
             $paymentWindow->setTestMode(1);
@@ -423,6 +468,32 @@ class onpay extends PaymentModule {
         }
 
         return $paymentWindow;
+    }
+
+    /**
+     * Method used for setting a payment info parameter. The value is attempted set, if this fails we'll ignore the value and do nothing.
+     * $value can be a single value or an array of values passed on as arguments.
+     * Validation of value happens directly in the SDK.
+     *
+     * @param $paymentInfo
+     * @param $parameter
+     * @param $value
+     */
+    private function setPaymentInfoParameter($paymentInfo, $parameter, $value) {
+        if ($paymentInfo instanceof \OnPay\API\PaymentWindow\PaymentInfo) {
+            $method = 'set'.$parameter;
+            if (method_exists($paymentInfo, $method)) {
+                try {
+                    if (is_array($value)) {
+                        call_user_func_array([$paymentInfo, $method], $value);
+                    } else {
+                        call_user_func([$paymentInfo, $method], $value);
+                    }
+                } catch (\OnPay\API\Exception\InvalidFormatException $e) {
+                    // No need to do anything. If the value fails, we'll simply ignore the value.
+                }
+            }
+        }
     }
 
     private function renderPaymentWindowForm(\OnPay\API\PaymentWindow $paymentWindow) {
