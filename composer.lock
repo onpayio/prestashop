@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8bf6d22af5ebd23c2d81758b72c1d3b5",
+    "content-hash": "95b0348dce9448bbace51375afbe5bcf",
     "packages": [
         {
             "name": "alcohol/iso4217",
@@ -112,16 +112,16 @@
         },
         {
             "name": "onpayio/php-sdk",
-            "version": "1.0.9",
+            "version": "1.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/onpayio/php-sdk.git",
-                "reference": "bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1"
+                "reference": "9dfacc9debbc376d6b08d76c0ad4ceb05c966e73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1",
-                "reference": "bc4fdc60bfa8ad4dba4361cec2ab6bcdc845f8c1",
+                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/9dfacc9debbc376d6b08d76c0ad4ceb05c966e73",
+                "reference": "9dfacc9debbc376d6b08d76c0ad4ceb05c966e73",
                 "shasum": ""
             },
             "require": {
@@ -141,7 +141,7 @@
             ],
             "description": "PHP SDK for OnPay.io API",
             "homepage": "https://github.com/onpayio/php-sdk",
-            "time": "2020-10-01T08:24:30+00:00"
+            "time": "2020-10-21T11:07:30+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
