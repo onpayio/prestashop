@@ -65,7 +65,7 @@ class onpay extends PaymentModule {
     public function __construct() {
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.4';
+        $this->version = '1.0.5';
         $this->ps_versions_compliancy = array('min' => '1.7.6.1', 'max' => _PS_VERSION_);
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
