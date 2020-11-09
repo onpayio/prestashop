@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 # Get composer
-EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)"
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+EXPECTED_SIGNATURE="6fa00eba5103ce6750f94f87af8356e12cc45d5bbb11a140533790cf60725f1c"
+php -r "copy('https://getcomposer.org/download/1.10.17/composer.phar', 'composer.phar');"
+ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha256', 'composer.phar');")"
 
 if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]
 then
-    >&2 echo 'ERROR: Invalid installer signature'
-    rm composer-setup.php
+    >&2 echo 'ERROR: Invalid composer version'
+    rm composer.phar
     exit 1
 fi
 
@@ -24,7 +24,7 @@ rm -rf build
 php composer.phar install
 
 # Require and run php-scoper
-php composer.phar global require humbug/php-scoper
+php composer.phar global require humbug/php-scoper "0.12.3"
 COMPOSER_BIN_DIR="$(composer global config bin-dir --absolute)"
 "$COMPOSER_BIN_DIR"/php-scoper add-prefix
 
