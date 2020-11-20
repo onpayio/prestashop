@@ -22,8 +22,17 @@
  * SOFTWARE.
  */
 
-.onpay.card-logo {
-    height: 36px;
-    margin-right: 8px;
-    margin-top: 3px;
-}
+$(document).on('click', '#onpayLogout', function() {
+    if(confirm('Are you sure you want to logout from Onpay?')) {
+        window.location.href = $(this).data('link');
+    }
+});
+
+$(document).on('click', '#onpayCancel', function(e) {
+    e.preventDefault();
+    if(confirm('Are you sure you want to cancel this transaction?')) {
+        $(this).attr('id', 'cancel');
+        $(this).attr('type', 'submit');
+        $(this).click();
+    }
+});
