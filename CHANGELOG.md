@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2020-12-07
+- Added feature for choosing card logos shown on payment page
+- Updated Mobilepay logo
+- Added method for registering hooks by versions
+
 ## [1.0.6] - 2020-11-09
 - Locked Composer version used to 1.x to ensure PHP 5.6 compatibility
 - Tested compability down to Prestashop 1.7.0.1
