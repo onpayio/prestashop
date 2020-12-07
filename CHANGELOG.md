@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.5] - 2020-10-21
+## [1.0.6] - 2020-11-09
 - Locked Composer version used to 1.x to ensure PHP 5.6 compatibility
-- - Tested compability down to Prestashop 1.7.0.1
+- Tested compability down to Prestashop 1.7.0.1
 
 ## [1.0.5] - 2020-10-21
 - Implemented usage of PHP-scoper to make unique namespaces for all composer dependencies, which solves any issues with overlap of dependencies from other modules and prestashop core.
