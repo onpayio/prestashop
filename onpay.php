@@ -45,6 +45,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_TOKEN = 'ONPAY_TOKEN';
     const SETTING_ONPAY_TESTMODE = 'ONPAY_TESTMODE_ENABLED';
     const SETTING_ONPAY_CARDLOGOS = 'ONPAY_CARD_LOGOS';
+    const SETTING_ONPAY_HOOK_VERSION = 'ONPAY_HOOK_VERSION';
 
     protected $htmlContent = '';
 
@@ -80,15 +81,48 @@ class onpay extends PaymentModule {
         $this->description = $this->l('Use OnPay.io for handling payments');
         $this->confirmUninstall = $this->l('Are you sure about uninstalling the OnPay.io module?');
         $this->currencyHelper = new CurrencyHelper();
+
+        $this->registerHooks();
+    }
+
+    private function registerHooks() {
+        $hookVersion = 2;
+        $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
+
+        if ($currentHookVersion >= $hookVersion) {
+            return;
+        }
+
+        $hooks = [
+            1 => [
+                'paymentReturn',
+                'paymentOptions',
+                'adminOrder',
+            ],
+            2 => [
+                'actionFrontControllerSetMedia',
+            ],
+        ];
+
+        $highestVersion = 0;
+        foreach ($hooks as $version => $versionHooks) {
+            if ($hookVersion >= $version) {
+                foreach ($versionHooks as $hook) {
+                    if (!$this->isRegisteredInHook($hook)) {
+                        $this->registerHook($hook);
+                    }
+                }
+                $highestVersion = $hookVersion;
+            }
+        }
+
+        Configuration::updateValue(self::SETTING_ONPAY_HOOK_VERSION, $highestVersion);
     }
 
     public function install() {
         if (
             !parent::install() ||
-            !$this->registerHook('paymentReturn') ||
-            !$this->registerHook('paymentOptions') ||
-            !$this->registerHook('adminOrder') ||
-            !$this->registerHook('actionFrontControllerSetMedia') ||
+            !Configuration::updateValue($this::SETTING_ONPAY_HOOK_VERSION, 0) ||
             !Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode(['mastercard', 'visa'])) // Set default values for card logos
         ) {
             return false;
@@ -109,7 +143,8 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS)
+            !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION)
         ) {
             return false;
         }
