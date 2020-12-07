@@ -45,6 +45,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_TOKEN = 'ONPAY_TOKEN';
     const SETTING_ONPAY_TESTMODE = 'ONPAY_TESTMODE_ENABLED';
     const SETTING_ONPAY_CARDLOGOS = 'ONPAY_CARD_LOGOS';
+    const SETTING_ONPAY_HOOK_VERSION = 'ONPAY_HOOK_VERSION';
 
     protected $htmlContent = '';
 
@@ -80,15 +81,48 @@ class onpay extends PaymentModule {
         $this->description = $this->l('Use OnPay.io for handling payments');
         $this->confirmUninstall = $this->l('Are you sure about uninstalling the OnPay.io module?');
         $this->currencyHelper = new CurrencyHelper();
+
+        $this->registerHooks();
+    }
+
+    private function registerHooks() {
+        $hookVersion = 2;
+        $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
+
+        if ($currentHookVersion >= $hookVersion) {
+            return;
+        }
+
+        $hooks = [
+            1 => [
+                'paymentReturn',
+                'paymentOptions',
+                'adminOrder',
+            ],
+            2 => [
+                'actionFrontControllerSetMedia',
+            ],
+        ];
+
+        $highestVersion = 0;
+        foreach ($hooks as $version => $versionHooks) {
+            if ($hookVersion >= $version) {
+                foreach ($versionHooks as $hook) {
+                    if (!$this->isRegisteredInHook($hook)) {
+                        $this->registerHook($hook);
+                    }
+                }
+                $highestVersion = $hookVersion;
+            }
+        }
+
+        Configuration::updateValue(self::SETTING_ONPAY_HOOK_VERSION, $highestVersion);
     }
 
     public function install() {
         if (
             !parent::install() ||
-            !$this->registerHook('paymentReturn') ||
-            !$this->registerHook('paymentOptions') ||
-            !$this->registerHook('adminOrder') ||
-            !$this->registerHook('actionFrontControllerSetMedia') ||
+            !Configuration::updateValue($this::SETTING_ONPAY_HOOK_VERSION, 0) ||
             !Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode(['mastercard', 'visa'])) // Set default values for card logos
         ) {
             return false;
@@ -109,7 +143,8 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS)
+            !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION)
         ) {
             return false;
         }
@@ -188,8 +223,7 @@ class onpay extends PaymentModule {
     /**
      * Hooks CSS to header in frontend
      */
-    public function hookActionFrontControllerSetMedia()
-    {
+    public function hookActionFrontControllerSetMedia() {
         $this->context->controller->registerStylesheet($this->name . '-front_css', $this->_path.'/views/css/front.css');
     }
 
@@ -220,7 +254,8 @@ class onpay extends PaymentModule {
                 $cardOption = new PaymentOption();
                 $cardOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay with credit card'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency), $cardLogos));
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos($cardLogos));
                 $payment_options[] = $cardOption;
             }
 
@@ -228,7 +263,8 @@ class onpay extends PaymentModule {
                 $vbOption = new PaymentOption();
                 $vbOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through ViaBill'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency), [
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
                         $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/viabill.svg')
                     ]));
                 $payment_options[] = $vbOption;
@@ -239,7 +275,8 @@ class onpay extends PaymentModule {
                 $mpoOption = new PaymentOption();
                 $mpoOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through MobilePay'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency), [
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
                         $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/mobilepay.svg')
                     ]));
                 $payment_options[] = $mpoOption;
@@ -520,13 +557,19 @@ class onpay extends PaymentModule {
         }
     }
 
-    private function renderPaymentWindowForm(\OnPay\API\PaymentWindow $paymentWindow, $logos = []) {
+    private function renderPaymentWindowForm(\OnPay\API\PaymentWindow $paymentWindow) {
         $this->smarty->assign(array(
             'form_action' => $paymentWindow->getActionUrl(),
-            'form_fields' => $paymentWindow->getFormFields(),
-            'logos' => $logos,
+            'form_fields' => $paymentWindow->getFormFields()
         ));
         return $this->display(__FILE__, 'views/templates/front/payment.tpl');
+    }
+
+    private function renderMethodLogos($logos = []) {
+        $this->smarty->assign(array(
+            'logos' => $logos,
+        ));
+        return $this->display(__FILE__, 'views/templates/front/logos.tpl');
     }
 
     /**
@@ -655,7 +698,7 @@ class onpay extends PaymentModule {
                             'name' => 'name'
                         ),
                         'expand' => array(
-                            ['print_total'] => count($this->getCardLogoOptions()),
+                            array('print_total' => count($this->getCardLogoOptions())),
                             'default' => 'show',
                             'show' => array('text' => $this->l('Show'), 'icon' => 'plus-sign-alt'),
                             'hide' => array('text' => $this->l('Hide'), 'icon' => 'minus-sign-alt')

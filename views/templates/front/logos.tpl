@@ -23,8 +23,8 @@
 *
 *}
 
-<form method="post" action="{$form_action}" id="onpayForm">
-    {foreach from=$form_fields key=field item=value}
-        <input type="hidden" name="{$field}" value="{$value}">
+<div class="onpay card-logos">
+    {foreach from=$logos item=logo}
+        <img src="{$logo}" class="onpay card-logo">
     {/foreach}
-</form>
+</div>

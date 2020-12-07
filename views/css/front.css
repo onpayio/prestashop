@@ -22,8 +22,11 @@
  * SOFTWARE.
  */
 
+.onpay.card-logos {
+    margin-bottom: 1.25rem;
+}
+
 .onpay.card-logo {
-    height: 36px;
-    margin-right: 8px;
-    margin-top: 3px;
+    height: 2rem;
+    margin-right: .5rem;
 }
