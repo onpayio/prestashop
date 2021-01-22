@@ -461,6 +461,7 @@ class onpay extends PaymentModule {
         $paymentWindow->setDeclineUrl($this->context->link->getModuleLink('onpay', 'payment', [], Configuration::get('PS_SSL_ENABLED')));
         $paymentWindow->setType("payment");
         $paymentWindow->setCallbackUrl($this->context->link->getModuleLink('onpay', 'callback', [], Configuration::get('PS_SSL_ENABLED'), null));
+        $paymentWindow->setWebsite(Tools::getHttpHost(true).__PS_BASE_URI__);
 
         if(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)) {
             $paymentWindow->setDesign(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
