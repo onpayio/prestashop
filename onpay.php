@@ -475,6 +475,7 @@ class onpay extends PaymentModule {
         $paymentWindow->setType("payment");
         $paymentWindow->setCallbackUrl($this->context->link->getModuleLink('onpay', 'callback', [], Configuration::get('PS_SSL_ENABLED'), null));
         $paymentWindow->setWebsite(Tools::getHttpHost(true).__PS_BASE_URI__);
+        $paymentWindow->setPlatform('prestashop17', $this->version, _PS_VERSION_);
 
         if(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)) {
             $paymentWindow->setDesign(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
