@@ -87,7 +87,7 @@ class onpay extends PaymentModule {
     }
 
     private function registerHooks() {
-        $hookVersion = 2;
+        $hookVersion = 3;
         $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
 
         if ($currentHookVersion >= $hookVersion) {
@@ -103,6 +103,10 @@ class onpay extends PaymentModule {
             2 => [
                 'actionFrontControllerSetMedia',
             ],
+            3 => [
+                'displayAdminOrderMainBottom',
+                'actionAdminControllerSetMedia',
+            ]
         ];
 
         $highestVersion = 0;
@@ -158,8 +162,6 @@ class onpay extends PaymentModule {
      * Administration page
      */
     public function getContent() {
-        $this->hookBackHeader();
-
         if('true' === Tools::getValue('detach')) {
             $params = [];
             $params['token'] = Tools::getAdminTokenLite('AdminModules');
@@ -217,7 +219,7 @@ class onpay extends PaymentModule {
     /**
      * Hooks custom CSS to header in backoffice
      */
-    public function hookBackHeader() {
+    public function hookActionAdminControllerSetMedia() {
         $this->context->controller->addCSS($this->_path.'/views/css/back.css');
         $this->context->controller->addJS($this->_path . '/views/js/back.js');
     }
@@ -300,14 +302,25 @@ class onpay extends PaymentModule {
         return;
     }
 
+    public function hookDisplayAdminOrderMainBottom($params) {
+        return $this->handleAdminOrderHook('views/admin/order_details.tpl', $params);
+    }
+
     /**
      * Actions on order page
      * @param $params
      * @return mixed
      */
-    public function hookAdminOrder($params)
-    {
-        $this->hookBackHeader();
+    public function hookAdminOrder($params) {
+        if (in_array('displayAdminOrderMainBottom', Hook::$executed_hooks)) {
+            // If hook displayAdminOrderMainBottom is executed, no need to do anything here, since the displayAdminOrder hook is used for legacy.
+            return;
+        }
+
+        return $this->handleAdminOrderHook('views/admin/order_details_legacy.tpl', $params);
+    }
+
+    private function handleAdminOrderHook($template, $params) {
         $order = new Order($params['id_order']);
         $payments = $order->getOrderPayments();
 
@@ -407,7 +420,7 @@ class onpay extends PaymentModule {
                 'isAuthorized' => false,
                 'this_path' => $this->_path,
             ));
-            return $this->display(__FILE__, 'views/admin/order_details.tpl');
+            return $this->display(__FILE__, $template);
         }
 
         $url = $_SERVER['REQUEST_URI'];
@@ -417,7 +430,7 @@ class onpay extends PaymentModule {
             'isAuthorized' => $this->getOnpayClient()->isAuthorized(),
             'this_path' => $this->_path,
         ));
-        return $this->display(__FILE__, 'views/admin/order_details.tpl');
+        return $this->display(__FILE__, $template);
     }
 
 

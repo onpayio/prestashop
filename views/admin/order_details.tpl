@@ -25,11 +25,14 @@
 
 {if $isAuthorized}
     {foreach from=$paymentdetails item=payment }
-        <div class="panel">
-            <div class="panel-heading">
-                <img src="{$this_path}/logo.png" height="14"/> Onpay - {l s='Transaction details' mod='onpay'}
+        <div class="card mt-2" id="view_order_payments_block">
+            <div class="card-header">
+                <h3 class="card-header-title">
+                    <img src="{$this_path}/logo.png" height="18"/> Onpay - {l s='Transaction details' mod='onpay'}
+                </h3>
             </div>
-            <div class="onpay-body">
+
+            <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         {if $payment['onpay']->acquirer eq 'test'}
@@ -82,44 +85,8 @@
                             </tr>
                             </tbody>
                         </table>
-
-                        <hr/>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                {if $payment['onpay']->status eq 'active' }
-                                    <form method="post" class="form-inline" id="onpayCaptureTransaction" action="{$url}"
-                                          name="capture-cancel">
-                                        <div class="form-group form-group-lg">
-                                            <input type="text" class="form-control input-lg" name="onpayCapture_value"
-                                                   value="{$payment['details']['chargeable']}">
-                                            <input type="hidden" class="form-control" name="onpayCapture_currency"
-                                                   value="{$payment['onpay']->currencyCode}">
-                                            <input type="submit" class="btn btn-info" value="Capture amount">
-                                        </div>
-                                    </form>
-                                {/if}
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="pull-right">
-                                    <form class="onpayCancel form-inline" method="post" action="{$url}" name="capture-cancel">
-                                        {if $payment['onpay']->charged > 0 and $payment['onpay']->refunded < $payment['onpay']->charged }
-                                            <button type="button" class="btn btn-info onpayActionButton" data-toggle="modal"
-                                                    data-target="#onpayRefund">
-                                                {l s='Refund' mod='onpay'}
-                                            </button>
-                                        {/if}
-
-                                        {if $payment['onpay']->status eq 'active'}
-                                            <input class="btn btn-danger" id="onpayCancel" type="button" name="onpayCancel"
-                                                   value="{if $payment['details']['charged'] gt 0} {l s='Finish transaction' mod='onpay'}  {else} {l s='Cancel transaction' mod='onpay'} {/if}">
-                                        {/if}
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+
                     <div class="col-md-6">
                         <h2>{l s='History' mod='onpay'}</h2>
 
@@ -151,8 +118,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                <h4 class="modal-title">{l s='Refund transaction' mod='onpay'}</h4>
+                                <h5 class="modal-title">{l s='Refund transaction' mod='onpay'}</h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
                             <div class="modal-body">
                                 <form method="post" id="onpayRefundTransaction" action="{$url}" name="capture-cancel">
@@ -182,8 +151,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                <h4 class="modal-title">{l s='Capture transaction' mod='onpay'}</h4>
+                                <h5 class="modal-title">{l s='Capture transaction' mod='onpay'}</h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
                             <div class="modal-body">
                                 <form method="post" id="onpayCaptureTransaction" action="{$url}" name="capture-cancel">
@@ -208,6 +179,42 @@
                 </div>
                 <!-- Capture window -->
             </div>
-        </div>
+
+            <div class="card-footer clearfix">
+                    <div class="float-right">
+                        <div class="form-inline">
+                            {if $payment['onpay']->status eq 'active' }
+                                <form method="post" class="mr-2" id="onpayCaptureTransaction" action="{$url}" name="capture-cancel">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control input-lg" name="onpayCapture_value"
+                                                value="{$payment['details']['chargeable']}">
+
+                                        <input type="hidden" class="form-control" name="onpayCapture_currency"
+                                                value="{$payment['onpay']->currencyCode}">
+
+                                        <div class="input-group-append">
+                                            <input type="submit" class="btn btn-info" value="Capture amount">
+                                        </div>
+                                    </div>
+                                </form>
+                            {/if}
+     
+                            <form class="onpayCancel" method="post" action="{$url}" name="capture-cancel">
+                                {if $payment['onpay']->charged > 0 and $payment['onpay']->refunded < $payment['onpay']->charged }
+                                    <button type="button" class="btn btn-info onpayActionButton mr-1" data-toggle="modal" data-target="#onpayRefund">
+                                        {l s='Refund' mod='onpay'}
+                                    </button>
+                                {/if}
+
+                                {if $payment['onpay']->status eq 'active'}
+                                    <input class="btn btn-danger" id="onpayCancel" type="button" name="onpayCancel" value="{if $payment['details']['charged'] gt 0} {l s='Finish transaction' mod='onpay'}  {else} {l s='Cancel transaction' mod='onpay'} {/if}">
+                                {/if}
+                            </form>
+                        </div>
+                    </div>
+
+            </div>
+            
+        </div>  
     {/foreach}
 {/if}
