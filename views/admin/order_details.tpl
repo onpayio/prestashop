@@ -48,7 +48,13 @@
                             </tr>
                             <tr>
                                 <td><strong>{l s='Card type' mod='onpay'}</strong></td>
-                                <td>{$payment['onpay']->cardType}</td>
+                                <td>
+                                    {if $payment['onpay']->cardType != null}
+                                        {$payment['onpay']->cardType}
+                                    {else}
+                                        {$payment['onpay']->acquirer}
+                                    {/if}
+                                </td>
                             </tr>
                             <tr>
                                 <td><strong>{l s='Transaction number' mod='onpay'}</strong></td>
