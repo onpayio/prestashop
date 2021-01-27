@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Updated version of onpayio/php-sdk
 - Added website field to payment window
+- Added Anyday Split as payment method
 
 ## [1.0.7] - 2020-12-07
 - Added feature for choosing card logos shown on payment page
