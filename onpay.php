@@ -38,6 +38,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_SECRET = 'ONPAY_SECRET';
     const SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY = 'ONPAY_EXTRA_PAYMENTS_MOBILEPAY';
     const SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL = 'ONPAY_EXTRA_PAYMENTS_VIABILL';
+    const SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY = 'ONPAY_EXTRA_PAYMENTS_ANYDAY_SPLIT';
     const SETTING_ONPAY_EXTRA_PAYMENTS_CARD = 'ONPAY_EXTRA_PAYMENTS_CARD';
     const SETTING_ONPAY_PAYMENTWINDOW_DESIGN = 'ONPAY_PAYMENTWINDOW_DESIGN';
     const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE = 'ONPAY_PAYMENTWINDOW_LANGUAGE';
@@ -268,6 +269,17 @@ class onpay extends PaymentModule {
                         $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/viabill.svg')
                     ]));
                 $payment_options[] = $vbOption;
+            }
+
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
+                $asOption = new PaymentOption();
+                $asOption->setModuleName($this->name)
+                    ->setCallToActionText($this->l('Pay through Anyday Split'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_ANYDAY, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/anyday.svg')
+                    ]));
+                $payment_options[] = $asOption;
             }
 
             // Mobilepay is not available in testmode
@@ -609,6 +621,11 @@ class onpay extends PaymentModule {
                                     'id' => 'VIABILL',
                                     'name' => $this->l('ViaBill'),
                                     'val' => true
+                                ],
+                                [
+                                    'id' => 'ANYDAY_SPLIT',
+                                    'name' => $this->l('Anyday Split'),
+                                    'val' => true
                                 ]
                             ],
                             'id'=>'id',
@@ -752,6 +769,12 @@ class onpay extends PaymentModule {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL, false);
             }
 
+            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY, false);
+            }
+
             if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, true);
             } else {
@@ -804,6 +827,7 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_SECRET => Tools::getValue(self::SETTING_ONPAY_SECRET, Configuration::get(self::SETTING_ONPAY_SECRET)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)),
+            self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)),
             self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)),
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)),
