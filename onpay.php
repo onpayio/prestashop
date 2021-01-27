@@ -138,6 +138,7 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_SECRET) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) ||
