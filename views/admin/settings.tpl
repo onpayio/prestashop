@@ -35,5 +35,8 @@
     </div>
     {else}
     {$form|unescape: 'html' }
+    <a id="onpayRefresh" data-link="{$smarty.server.REQUEST_URI}&refresh=true" class="btn btn-default">{l s='Refresh' mod='onpay'}</a>
     <a id="onpayLogout" data-link="{$smarty.server.REQUEST_URI}&detach=true" class="btn btn-default">{l s='Log out from OnPay' mod='onpay'}</a>
+    <br/>
+    <br/>
 {/if}
