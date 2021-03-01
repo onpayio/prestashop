@@ -28,6 +28,12 @@ $(document).on('click', '#onpayLogout', function() {
     }
 });
 
+$(document).on('click', '#onpayRefresh', function() {
+    if(confirm('Are you sure you want to refresh gateway ID and secret?')) {
+        window.location.href = $(this).data('link');
+    }
+});
+
 $(document).on('click', '#onpayCancel', function(e) {
     e.preventDefault();
     if(confirm('Are you sure you want to cancel this transaction?')) {

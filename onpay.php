@@ -175,8 +175,10 @@ class onpay extends PaymentModule {
         }
 
         $onpayApi = $this->getOnpayClient(true);
-        if(false !== Tools::getValue('code') && !$onpayApi->isAuthorized()) {
-            $onpayApi->finishAuthorize(Tools::getValue('code'));
+        if(false !== Tools::getValue('code') || 'true' === Tools::getValue('refresh')) {
+            if (!$onpayApi->isAuthorized() && false !== Tools::getValue('code')) {
+                $onpayApi->finishAuthorize(Tools::getValue('code'));
+            }
             Configuration::updateValue(self::SETTING_ONPAY_GATEWAY_ID, $onpayApi->gateway()->getInformation()->gatewayId);
             Configuration::updateValue(self::SETTING_ONPAY_SECRET, $onpayApi->gateway()->getPaymentWindowIntegrationSettings()->secret);
         }
