@@ -63,30 +63,40 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $this->jsonResponse('Payment module unavailable', true, 403);
         }
 
+        // Get order
+        $order = OrderCore::getByCartId($cart->id);
+
         $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
         $currency = $this->context->currency;
 
-        // Validate order
-        $this->module->validateOrder(
-            $cart->id,
-            Configuration::get('PS_OS_PAYMENT'),
-            $total,
-            'OnPay',
-            null,
-            [
-                'transaction_id' => Tools::getValue('onpay_uuid'),
-                'card_brand' => Tools::getValue('onpay_cardtype')
-            ],
-            (int)$currency->id,
-            false,
-            $customer->secure_key
-        );
+        // Validate order if none is validated yet
+        if (null === $order) {
+            $this->module->validateOrder(
+                $cart->id,
+                Configuration::get('PS_OS_PAYMENT'),
+                $total,
+                'OnPay',
+                null,
+                [
+                    'transaction_id' => Tools::getValue('onpay_uuid'),
+                    'card_brand' => Tools::getValue('onpay_cardtype')
+                ],
+                (int)$currency->id,
+                false,
+                $customer->secure_key
+            );
+            $order = OrderCore::getByCartId($cart->id);
+        } else {
+            if ($order->current_state !== Configuration::get('PS_OS_PAYMENT')) {
+                $order->setCurrentState(Configuration::get('PS_OS_PAYMENT'));
+            }
+        }
+
         $this->jsonResponse('Order validated');
     }
 
     private function jsonResponse($message, $error = false, $responseCode = 200) {
-        header('Content-Type: application/json');
-        http_response_code($responseCode);
+        header('Content-Type: application/json', true, $responseCode);
         $response = [];
         if (!$error) {
             $response = ['success' => $message, 'error' => false];

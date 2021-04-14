@@ -47,6 +47,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_TESTMODE = 'ONPAY_TESTMODE_ENABLED';
     const SETTING_ONPAY_CARDLOGOS = 'ONPAY_CARD_LOGOS';
     const SETTING_ONPAY_HOOK_VERSION = 'ONPAY_HOOK_VERSION';
+    const SETTING_ONPAY_ORDERSTATUS_AWAIT = 'ONPAY_OS_AWAIT';
 
     protected $htmlContent = '';
 
@@ -84,6 +85,7 @@ class onpay extends PaymentModule {
         $this->currencyHelper = new CurrencyHelper();
 
         $this->registerHooks();
+        $this->registerOrderState();
     }
 
     private function registerHooks() {
@@ -124,6 +126,50 @@ class onpay extends PaymentModule {
         Configuration::updateValue(self::SETTING_ONPAY_HOOK_VERSION, $highestVersion);
     }
 
+    private function registerOrderState() {
+        $awaitingStateName = 'Awaiting OnPay Payment';
+
+        // If configuration key exists no need to register state
+        if (Configuration::get(self::SETTING_ONPAY_ORDERSTATUS_AWAIT, null, null, null, 0) !== 0) {
+            return;
+        }
+
+        // check if order state exist
+        $state_exist = false;
+        foreach (OrderState::getOrderStates((int)$this->context->language->id) as $state) {
+            if (in_array($awaitingStateName, $state)) {
+                $state_exist = true;
+                break;
+            }
+        }
+ 
+        // If the state does not exist, we create it.
+        if (!$state_exist) {
+            // Create new order state
+            $orderState = new OrderState();
+            $orderState->color = '#34209E'; // PS color for awaiting
+            $orderState->send_email = false;
+            $orderState->module_name = $this->name;
+            $orderState->name = array();
+            $languages = Language::getLanguages(false);
+            foreach ($languages as $language) {
+                $orderState->name[$language['id_lang']] = $awaitingStateName;
+            }
+            // Add state
+            $orderState->add();
+            // Save order state ID for later use
+            Configuration::updateValue(self::SETTING_ONPAY_ORDERSTATUS_AWAIT, $orderState->id);
+        }
+    }
+
+    private function unregisterOrderState() {
+        if (Configuration::get(self::SETTING_ONPAY_ORDERSTATUS_AWAIT, null, null, null, 0) > 0) {
+            $orderState = new OrderState(Configuration::get(self::SETTING_ONPAY_ORDERSTATUS_AWAIT));
+            $orderState->delete();
+        }
+        return true;
+    }   
+
     public function install() {
         if (
             !parent::install() ||
@@ -138,6 +184,7 @@ class onpay extends PaymentModule {
     public function uninstall() {
         if (
             parent::uninstall() == false ||
+            !$this->unregisterOrderState() ||
             !Configuration::deleteByName($this::SETTING_ONPAY_GATEWAY_ID) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_SECRET) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) ||
@@ -150,7 +197,8 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION)
+            !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT)
         ) {
             return false;
         }

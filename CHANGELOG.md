@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Added Button on settings page for refreshing gateway id and window secret
+- Fixed not redirecting cardholder to confirmation properly, before getting callback
 
 ## [1.0.8] - 2021-01-28
 - Updated version of onpayio/php-sdk
