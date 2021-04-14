@@ -52,14 +52,35 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
             if (false !== Tools::getValue('accept')) {
                 // Transaction was accepted
                 $cart = new CartCore(Tools::getValue('onpay_reference'));
+                // Get order
+                $order = OrderCore::getByCartId($cart->id);
                 /** @var CustomerCore $customer */
                 $customer = new Customer($cart->id_customer);
+
+                if (null === $order) {
+                    // Order not yet validated, validate it as awaiting.
+                    $this->module->validateOrder(
+                        $cart->id,
+                        Configuration::get('ONPAY_OS_AWAIT'),
+                        $total,
+                        'OnPay',
+                        null,
+                        [
+                            'transaction_id' => Tools::getValue('onpay_uuid'),
+                            'card_brand' => Tools::getValue('onpay_cardtype')
+                        ],
+                        (int)$currency->id,
+                        false,
+                        $customer->secure_key
+                    );
+                }
+
+                // Order is created, redirect to confirmation page
                 Tools::redirect($this->context->link->getPageLink('order-confirmation', Configuration::get('PS_SSL_ENABLED'), null, [
                     'id_cart' => $cart->id,
                     'id_module' => (int)$this->module->id,
                     'key' => $customer->secure_key
                 ]));
-                Tools::redirect('index.php?controller=order-confirmation&id_cart=' . $cart->id . '&id_module=' . (int)$this->module->id . '&key=' . $customer->secure_key . '&status=' . $status);
             }
         }
     }
