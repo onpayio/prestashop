@@ -27,8 +27,9 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {
+        $onpay = Module::getInstanceByName('onpay');
         $paymentWindow = new \OnPay\API\PaymentWindow();
-        $paymentWindow->setSecret(Configuration::get('ONPAY_SECRET'));
+        $paymentWindow->setSecret(Configuration::get(Onpay::SETTING_ONPAY_SECRET));
 
         /** @var ContextCore $context */
         $context = Context::getContext();
@@ -66,11 +67,23 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         // Get order
         $order = OrderCore::getByCartId($cart->id);
 
-        $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-        $currency = $this->context->currency;
+        // Check if order creation is already happening
+        if (null === $order && $onpay->isCartLocked($cart->id)) {
+            // Wait for order creation to end.
+            while ($onpay->isCartLocked($cart->id)) {
+                usleep(100);
+            }
+            $order = OrderCore::getByCartId($cart->id);
+        }
 
         // Validate order if none is validated yet
         if (null === $order) {
+            // Lock cart while creating order
+            $onpay->lockCart($cart->id);
+
+            $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
+            $currency = $this->context->currency;
+
             $this->module->validateOrder(
                 $cart->id,
                 Configuration::get('PS_OS_PAYMENT'),
@@ -85,8 +98,11 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
                 false,
                 $customer->secure_key
             );
-            $order = OrderCore::getByCartId($cart->id);
+
+            // Unlock cart again
+            $onpay->unlockCart($cart->id);
         } else {
+            // Order is already created, set status to payment complete
             if ($order->current_state !== Configuration::get('PS_OS_PAYMENT')) {
                 $order->setCurrentState(Configuration::get('PS_OS_PAYMENT'));
             }
