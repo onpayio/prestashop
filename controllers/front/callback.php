@@ -69,11 +69,13 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
         // Check if order creation is already happening
         if (null === $order && $onpay->isCartLocked($cart->id)) {
-            // Wait for order creation to end.
-            while ($onpay->isCartLocked($cart->id)) {
-                usleep(100);
-            }
+            // Wait for order creation to end for 500ms, and try to get order again.
+            usleep(500);
             $order = OrderCore::getByCartId($cart->id);
+            if (null === $order) {
+                // If still no order created, tell client to try again later
+                $this->jsonResponse('Cart locked, try again later', true, 400);
+            }
         }
 
         // Validate order if none is validated yet
