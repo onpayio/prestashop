@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.9] - 2021-04-15
 - Added Button on settings page for refreshing gateway id and window secret
 - Fixed not redirecting cardholder to confirmation properly, before getting callback
 - Added table in DB that keeps locked state of cart while creating orders from them.
