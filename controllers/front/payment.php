@@ -42,6 +42,7 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
             return;
         }
 
+        $onpay = Module::getInstanceByName('onpay');
         $paymentWindow = new \OnPay\API\PaymentWindow();
         $paymentWindow->setSecret(Configuration::get('ONPAY_SECRET'));
 
@@ -51,14 +52,23 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
             // Now we'll determine if we're dealing with an accepted or declined transaction.
             if (false !== Tools::getValue('accept')) {
                 // Transaction was accepted
-                $cart = new CartCore(Tools::getValue('onpay_reference'));
+                $cart = new Cart(Tools::getValue('onpay_reference'));
+
                 // Get order
                 $order = OrderCore::getByCartId($cart->id);
+
                 /** @var CustomerCore $customer */
                 $customer = new Customer($cart->id_customer);
 
-                if (null === $order) {
-                    // Order not yet validated, validate it as awaiting.
+                // Check that order is not yet created, or in process of creation.
+                // If order is in process of creation, we simply don't care about setting a state.
+                if (null === $order && !$onpay->isCartLocked($cart->id)) {
+                    // Lock cart while creating order
+                    $onpay->lockCart($cart->id);
+
+                    $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
+                    $currency = $this->context->currency;
+
                     $this->module->validateOrder(
                         $cart->id,
                         Configuration::get('ONPAY_OS_AWAIT'),
@@ -73,6 +83,9 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
                         false,
                         $customer->secure_key
                     );
+                    
+                    // Unlock cart again
+                    $onpay->unlockCart($cart->id);
                 }
 
                 // Order is created, redirect to confirmation page

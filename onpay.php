@@ -48,6 +48,8 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_CARDLOGOS = 'ONPAY_CARD_LOGOS';
     const SETTING_ONPAY_HOOK_VERSION = 'ONPAY_HOOK_VERSION';
     const SETTING_ONPAY_ORDERSTATUS_AWAIT = 'ONPAY_OS_AWAIT';
+    const SETTING_ONPAY_LOCKEDCART_TABLE = 'onpay_locked_cart';
+    const SETTING_ONPAY_LOCKEDCART_TABLE_CREATED = 'ONPAY_LOCKEDCART_CREATED';
 
     protected $htmlContent = '';
 
@@ -86,6 +88,7 @@ class onpay extends PaymentModule {
 
         $this->registerHooks();
         $this->registerOrderState();
+        $this->registerCartLockTable();
     }
 
     private function registerHooks() {
@@ -168,7 +171,29 @@ class onpay extends PaymentModule {
             $orderState->delete();
         }
         return true;
-    }   
+    }
+    
+    /**
+     * Create table used for locked carts
+     */
+    private function registerCartLockTable() {
+        if (Configuration::get(self::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED, null, null, null, false)) {
+            return;
+        }
+        $tableName = _DB_PREFIX_ . self::SETTING_ONPAY_LOCKEDCART_TABLE;
+        $db = Db::getInstance();
+        $db->execute('CREATE TABLE `' . $tableName . '` (`id_cart` INT(10) UNSIGNED NOT NULL)') !== false;
+        Configuration::updateValue(self::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED, true);
+    }
+
+    /**
+     * Drop table used for locked carts
+     */
+    private function dropCartLockTable() {
+        $tableName = _DB_PREFIX_ . self::SETTING_ONPAY_LOCKEDCART_TABLE;
+        $db = Db::getInstance();
+        return $db->execute('DROP TABLE `' . $tableName . '`') !== false;
+    }
 
     public function install() {
         if (
@@ -185,6 +210,7 @@ class onpay extends PaymentModule {
         if (
             parent::uninstall() == false ||
             !$this->unregisterOrderState() ||
+            !$this->dropCartLockTable() ||
             !Configuration::deleteByName($this::SETTING_ONPAY_GATEWAY_ID) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_SECRET) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) ||
@@ -198,7 +224,8 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT)
+            !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED)
         ) {
             return false;
         }
@@ -905,6 +932,37 @@ class onpay extends PaymentModule {
         }
 
         return $values;
+    }
+
+    /**
+     * Whether cart ID is in locked carts table
+     */
+    public function isCartLocked($cartId) {
+        $sql = new DbQuery();
+        $sql->select('*');
+        $sql->from(self::SETTING_ONPAY_LOCKEDCART_TABLE, 'lc');
+        $sql->where('lc.id_cart = ' . (int)$cartId);
+        $sql->limit('1');
+        $rows = Db::getInstance()->executeS($sql);
+        return count($rows) > 0;
+    }
+
+    /**
+     * Adds cart ID to locked carts table
+     */
+    public function lockCart($cartId) {
+        $db = Db::getInstance();
+        $db->insert(self::SETTING_ONPAY_LOCKEDCART_TABLE, [
+            'id_cart' => (int)$cartId,
+        ]);
+    }
+
+    /**
+     * Removes cart ID from locked carts table
+     */
+    public function unlockCart($cartId) {
+        $db = Db::getInstance();
+        $db->delete(self::SETTING_ONPAY_LOCKEDCART_TABLE, 'id_cart = ' . (int)$cartId);
     }
 
     /**
