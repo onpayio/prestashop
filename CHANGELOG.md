@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Added Vipps as payment option
+- Fixed transaction not being properly set on payments
 
 ## [1.0.9] - 2021-04-15
 - Added Button on settings page for refreshing gateway id and window secret
