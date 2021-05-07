@@ -54,15 +54,15 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
                 // Transaction was accepted
                 $cart = new Cart(Tools::getValue('onpay_reference'));
 
-                // Get order
-                $order = OrderCore::getByCartId($cart->id);
+                // Get orderId
+                $orderId = OrderCore::getOrderByCartId($cart->id);
 
                 /** @var CustomerCore $customer */
                 $customer = new Customer($cart->id_customer);
 
                 // Check that order is not yet created, or in process of creation.
                 // If order is in process of creation, we simply don't care about setting a state.
-                if (null === $order && !$onpay->isCartLocked($cart->id)) {
+                if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
                     // Lock cart while creating order
                     $onpay->lockCart($cart->id);
 

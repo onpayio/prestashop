@@ -64,22 +64,22 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $this->jsonResponse('Payment module unavailable', true, 403);
         }
 
-        // Get order
-        $order = OrderCore::getByCartId($cart->id);
+        // Get orderId
+        $orderId = OrderCore::getOrderByCartId($cart->id);
 
         // Check if order creation is already happening
-        if (null === $order && $onpay->isCartLocked($cart->id)) {
-            // Wait for order creation to end for 500ms, and try to get order again.
-            usleep(500);
-            $order = OrderCore::getByCartId($cart->id);
-            if (null === $order) {
+        if ($orderId === false && $onpay->isCartLocked($cart->id)) {
+            // Wait for order creation to end for 1s, and try to get order again.
+            sleep(1);
+            $orderId = OrderCore::getOrderByCartId($cart->id);
+            if ($orderId === false) {
                 // If still no order created, tell client to try again later
                 $this->jsonResponse('Cart locked, try again later', true, 400);
             }
         }
 
         // Validate order if none is validated yet
-        if (null === $order) {
+        if ($orderId === false) {
             // Lock cart while creating order
             $onpay->lockCart($cart->id);
 
@@ -105,8 +105,17 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $onpay->unlockCart($cart->id);
         } else {
             // Order is already created, set status to payment complete
+            $order = new Order($orderId);
             if ($order->current_state !== Configuration::get('PS_OS_PAYMENT')) {
                 $order->setCurrentState(Configuration::get('PS_OS_PAYMENT'));
+
+                // For some reason Prestashop 'forgets' the transaction id given on order validation, so we'll set again.
+                $payments = OrderPaymentCore::getByOrderId($orderId);
+                if (!empty($payments)) {
+                    $payment = $payments[0];
+                    $payment->transaction_id = Tools::getValue('onpay_uuid');
+                    $payment->update();
+                }
             }
         }
 
