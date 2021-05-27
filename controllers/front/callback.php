@@ -78,8 +78,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             }
         }
 
-        // Validate order if none is validated yet
-        if ($orderId === false) {
+        // Check that order is not yet created, or in process of creation.
+        if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
             // Lock cart while creating order
             $onpay->lockCart($cart->id);
 
