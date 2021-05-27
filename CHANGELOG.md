@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2021-05-27
+- Fixed bug with locked state of cart on callbacks.
+
 ## [1.0.10] - 2021-05-07
 - Added Vipps as payment option
 - Fixed transaction not being properly set on payments
