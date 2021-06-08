@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.12] - 2021-06-08
 - Implemented custom success page instead of relying on the build in confirmation page.
 
 ## [1.0.11] - 2021-05-27
