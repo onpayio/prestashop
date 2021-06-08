@@ -67,17 +67,6 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         // Get orderId
         $orderId = OrderCore::getOrderByCartId($cart->id);
 
-        // Check if order creation is already happening
-        if ($orderId === false && $onpay->isCartLocked($cart->id)) {
-            // Wait for order creation to end for 1s, and try to get order again.
-            sleep(1);
-            $orderId = OrderCore::getOrderByCartId($cart->id);
-            if ($orderId === false) {
-                // If still no order created, tell client to try again later
-                $this->jsonResponse('Cart locked, try again later', true, 400);
-            }
-        }
-
         // Check that order is not yet created, or in process of creation.
         if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
             // Lock cart while creating order
@@ -103,20 +92,6 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
             // Unlock cart again
             $onpay->unlockCart($cart->id);
-        } else {
-            // Order is already created, set status to payment complete
-            $order = new Order($orderId);
-            if ($order->current_state !== Configuration::get('PS_OS_PAYMENT')) {
-                $order->setCurrentState(Configuration::get('PS_OS_PAYMENT'));
-
-                // For some reason Prestashop 'forgets' the transaction id given on order validation, so we'll set again.
-                $payments = OrderPaymentCore::getByOrderId($orderId);
-                if (!empty($payments)) {
-                    $payment = $payments[0];
-                    $payment->transaction_id = Tools::getValue('onpay_uuid');
-                    $payment->update();
-                }
-            }
         }
 
         $this->jsonResponse('Order validated');
