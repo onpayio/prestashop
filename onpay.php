@@ -356,7 +356,7 @@ class onpay extends PaymentModule {
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
                 $asOption = new PaymentOption();
                 $asOption->setModuleName($this->name)
-                    ->setCallToActionText($this->l('Pay through Anyday Split'))
+                    ->setCallToActionText($this->l('Pay through Anyday'))
                     ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_ANYDAY, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
                         $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/anyday.svg')
@@ -734,7 +734,7 @@ class onpay extends PaymentModule {
                                 ],
                                 [
                                     'id' => 'ANYDAY_SPLIT',
-                                    'name' => $this->l('Anyday Split'),
+                                    'name' => $this->l('Anyday'),
                                     'val' => true
                                 ]
                             ],
