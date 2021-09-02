@@ -49,6 +49,8 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_CARDLOGOS = 'ONPAY_CARD_LOGOS';
     const SETTING_ONPAY_HOOK_VERSION = 'ONPAY_HOOK_VERSION';
     const SETTING_ONPAY_ORDERSTATUS_AWAIT = 'ONPAY_OS_AWAIT';
+    const SETTING_ONPAY_AUTOCAPTURE = 'SETTING_ONPAY_AUTOCAPTURE';
+    const SETTING_ONPAY_AUTOCAPTURE_STATUS = 'SETTING_ONPAY_AUTOCAPTURE_STATUS';
     const SETTING_ONPAY_LOCKEDCART_TABLE = 'onpay_locked_cart';
     const SETTING_ONPAY_LOCKEDCART_TABLE_CREATED = 'ONPAY_LOCKEDCART_CREATED';
 
@@ -93,7 +95,7 @@ class onpay extends PaymentModule {
     }
 
     private function registerHooks() {
-        $hookVersion = 3;
+        $hookVersion = 4;
         $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
 
         if ($currentHookVersion >= $hookVersion) {
@@ -112,7 +114,10 @@ class onpay extends PaymentModule {
             3 => [
                 'displayAdminOrderMainBottom',
                 'actionAdminControllerSetMedia',
-            ]
+            ],
+            4 => [
+                'actionOrderStatusUpdate',
+            ],
         ];
 
         $highestVersion = 0;
@@ -227,6 +232,8 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE_STATUS) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED)
         ) {
             return false;
@@ -394,6 +401,41 @@ class onpay extends PaymentModule {
 
     public function hookDisplayAdminOrderMainBottom($params) {
         return $this->handleAdminOrderHook('views/admin/order_details.tpl', $params);
+    }
+
+    /**
+     * @param $params
+     * @return mixed
+     */
+    public function hookActionOrderStatusUpdate($params) {
+        $newStatus = $params['newOrderStatus'];
+        $order = new Order($params['id_order']);
+        
+        // Check if auto capture is enabled, and that new status is the correct status.
+        if (Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE) && intval(Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS)) === $newStatus->id) {
+            $payments = $order->getOrderPayments();
+            $onPayAPI = $this->getOnpayClient();
+
+            if (!$onPayAPI->isAuthorized()) {
+                return;
+            }
+
+            // Loop over payments on order
+            foreach ($payments as $payment) {
+                // Check if order payment method is OnPay
+                if ($payment->payment_method === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                    $transaction = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
+                    // If transaction has status active, and charged amount is less than the full amount, we'll capture the remaining amount on transaction
+                    if ($transaction->status === 'active' && $transaction->charged < $transaction->amount) {
+                        try {
+                            $onPayAPI->transaction()->captureTransaction($payment->transaction_id);
+                        } catch (\OnPay\API\Exception\ApiException $exception) {
+                            // No need to do anything here
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -742,6 +784,11 @@ class onpay extends PaymentModule {
                             'name'=>'name'
                         ]
                     ),
+
+                    array(
+                        'type' => 'title',
+                        'label' => '<br /><h3>' . $this->l('Payment window') . '</h3>'
+                    ),
                     array(
                         'type' => 'switch',
                         'label' => $this->l('Test Mode'),
@@ -759,7 +806,6 @@ class onpay extends PaymentModule {
                                 'label' => $this->l('Off')
                             )
                         ]
-
                     ),
                     array(
                         'type' => 'select',
@@ -799,21 +845,6 @@ class onpay extends PaymentModule {
                                 'value' => false
                             )
                         ]
-
-                    ),
-                    array(
-                        'type' => 'text',
-                        'readonly' => true,
-                        'class' => 'fixed-width-xl',
-                        'label' => $this->l('Gateway ID'),
-                        'name' => self::SETTING_ONPAY_GATEWAY_ID,
-                    ),
-                    array(
-                        'type' => 'text',
-                        'readonly' => true,
-                        'class' => 'fixed-width-xl',
-                        'label' => $this->l('Window secret'),
-                        'name' => self::SETTING_ONPAY_SECRET,
                     ),
                     array(
                         'type' => 'checkbox',
@@ -832,7 +863,60 @@ class onpay extends PaymentModule {
                             'hide' => array('text' => $this->l('Hide'), 'icon' => 'minus-sign-alt')
                         ),
                     ),
-                      
+
+                    array(
+                        'type' => 'title',
+                        'label' => '<br /><h3>' . $this->l('Backoffice settings') . '</h3>'
+                    ),
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Automatic capture'),
+                        'desc' => $this->l('Automatically capture remaining amounts on transactions, when orders are marked with status chosen below.'),
+                        'name' => self::SETTING_ONPAY_AUTOCAPTURE,
+                        'required' => false,
+                        'values'=>[
+                            array(
+                                'id' => 'ENABLED',
+                                'value' => '1',
+                                'label' => $this->l('On')
+                            ),
+                            array(
+                                'id' => 'ENABLED',
+                                'value' => false,
+                                'label' => $this->l('Off')
+                            )
+                        ]
+                    ),
+                    array(
+                        'type' => 'select',
+                        'lang' => true,
+                        'label' => $this->l('Automatic capture status'),
+                        'desc' => $this->l('Status that triggers automatic capture of transaction, if enabled above.'),
+                        'name' => self::SETTING_ONPAY_AUTOCAPTURE_STATUS,
+                        'options' => [
+                            'query'=> $this->getOrderStatuses(),
+                            'id' => 'id_option',
+                            'name' => 'name',
+                        ]
+                    ),
+
+                    array(
+                        'label' => '<br /><h3>' . $this->l('Gateway information') . '</h3>',
+                    ),
+                    array(
+                        'type' => 'text',
+                        'readonly' => true,
+                        'class' => 'fixed-width-xl',
+                        'label' => $this->l('Gateway ID'),
+                        'name' => self::SETTING_ONPAY_GATEWAY_ID,
+                    ),
+                    array(
+                        'type' => 'text',
+                        'readonly' => true,
+                        'class' => 'fixed-width-xl',
+                        'label' => $this->l('Window secret'),
+                        'name' => self::SETTING_ONPAY_SECRET,
+                    ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -928,6 +1012,23 @@ class onpay extends PaymentModule {
                 }
             }
             Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode($cardLogos));
+
+            if(Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE)) {
+                Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE, false);
+            }
+
+            if(Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === 'ONPAY_AUTOCAPTURE_STATUS') {
+                Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, false);
+            } else {
+                $value = Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS);
+                if ($value === '0') {
+                    Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, null);
+                } else {
+                    Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, $value);
+                }
+            }
         }
         $this->htmlContent .= $this->displayConfirmation($this->l('Settings updated'));
     }
@@ -950,6 +1051,8 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)),
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)),
             self::SETTING_ONPAY_TESTMODE => Tools::getValue(self::SETTING_ONPAY_TESTMODE, Configuration::get(self::SETTING_ONPAY_TESTMODE)),
+            self::SETTING_ONPAY_AUTOCAPTURE => Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE, Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE)),
+            self::SETTING_ONPAY_AUTOCAPTURE_STATUS => Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS)),
         );
 
         foreach (json_decode(Configuration::get(self::SETTING_ONPAY_CARDLOGOS), true) as $cardLogo) {
@@ -1107,6 +1210,28 @@ class onpay extends PaymentModule {
             return $languageRelations[$languageIso];
         }
         return 'en';
+    }
+
+    /**
+     * Returns a list of all available statuses
+     * 
+     * @return array
+     */
+    private function getOrderStatuses() {
+        $orderState = new OrderState();
+        $statuses = [
+            [
+                'name' => '-',
+                'id_option' => 0,
+            ]
+        ];
+        foreach($orderState->getOrderStates($this->context->language->id) as $status) {
+            $statuses[] = [
+                'name' => $status['name'],
+                'id_option' => $status['id_order_state'],
+            ];
+        }
+        return $statuses;
     }
 
     /**
