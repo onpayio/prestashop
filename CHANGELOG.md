@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Updated Anyday branding
 - Added feature for automatically capturing transactions, when orders are updated with specific status
+- Exclude paragonIE random_compat from scoper, since this repo is registered in the global space, and results in errors if prefixed with a namespace.
 
 ## [1.0.12] - 2021-06-08
 - Implemented custom success page instead of relying on the build in confirmation page.
