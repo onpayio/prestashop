@@ -649,10 +649,26 @@ class onpay extends PaymentModule {
         $paymentInfo = new \OnPay\API\PaymentWindow\PaymentInfo();
 
         $this->setPaymentInfoParameter($paymentInfo, 'AccountId', $customer->id);
-        $this->setPaymentInfoParameter($paymentInfo, 'AccountDateCreated', date('Y-m-d', strtotime($customer->date_add)));
-        $this->setPaymentInfoParameter($paymentInfo, 'AccountDateChange', date('Y-m-d', strtotime($customer->date_upd)));
-        $this->setPaymentInfoParameter($paymentInfo, 'AccountDatePasswordChange', date('Y-m-d', strtotime($customer->last_passwd_gen)));
-        $this->setPaymentInfoParameter($paymentInfo, 'AccountShippingFirstUseDate', date('Y-m-d', strtotime($delivery_address->date_add)));
+
+        $dateCreated = strtotime($customer->date_add);
+        if ($dateCreated) {
+            $this->setPaymentInfoParameter($paymentInfo, 'AccountDateCreated', date('Y-m-d', $dateCreated));
+        }
+
+        $dateChange = strtotime($customer->date_upd);
+        if ($dateChange) {
+            $this->setPaymentInfoParameter($paymentInfo, 'AccountDateChange', date('Y-m-d', $dateChange));
+        }
+
+        $datePwChange = strtotime($customer->last_passwd_gen);
+        if ($datePwChange) {
+            $this->setPaymentInfoParameter($paymentInfo, 'AccountDatePasswordChange', date('Y-m-d', $datePwChange));
+        }
+
+        $dateShipFirst = strtotime($delivery_address->date_add);
+        if ($dateShipFirst) {
+            $this->setPaymentInfoParameter($paymentInfo, 'AccountShippingFirstUseDate', date('Y-m-d', $dateShipFirst));
+        }
 
         if ($invoice_address->id === $delivery_address->id) {
             $this->setPaymentInfoParameter($paymentInfo, 'AccountShippingIdenticalName', 'Y');
