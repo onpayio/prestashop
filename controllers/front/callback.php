@@ -31,15 +31,19 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         $paymentWindow = new \OnPay\API\PaymentWindow();
         $paymentWindow->setSecret(Configuration::get(Onpay::SETTING_ONPAY_SECRET));
 
-        /** @var ContextCore $context */
-        $context = Context::getContext();
+        $onpayUuid = Tools::getValue('onpay_uuid');
+        $onpayReference = Tools::getValue('onpay_reference');
 
-        if (!$paymentWindow->validatePayment(Tools::getAllValues())) {
+        // Validate query parameters and check that onpay_number is present
+        if (!$paymentWindow->validatePayment(Tools::getAllValues()) || false === $onpayUuid) {
             $this->jsonResponse('Invalid values', true, 400);
         }
 
+        /** @var ContextCore $context */
+        $context = Context::getContext();
+
         /** @var CartCore $cart */
-        $cart = new Cart(Tools::getValue('onpay_reference')); // Since the reference initially sent to onpay is the cart ID, we can use the reference the other way around to get the cart
+        $cart = new Cart($onpayReference); // Since the reference initially sent to onpay is the cart ID, we can use the reference the other way around to get the cart
         if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
             $this->jsonResponse('Invalid cart', true, 500);
         }
@@ -82,7 +86,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
                 'OnPay',
                 null,
                 [
-                    'transaction_id' => Tools::getValue('onpay_uuid'),
+                    'transaction_id' => $onpayUuid,
                     'card_brand' => Tools::getValue('onpay_cardtype')
                 ],
                 (int)$currency->id,

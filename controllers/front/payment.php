@@ -34,15 +34,11 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 
-        if (!Tools::getValue('onpay_hmac_sha1')) {
-            return;
-        }
-
         $onpay = Module::getInstanceByName('onpay');
         $paymentWindow = new \OnPay\API\PaymentWindow();
         $paymentWindow->setSecret(Configuration::get('ONPAY_SECRET'));
 
-        if ($paymentWindow->validatePayment(Tools::getAllValues()) && false !== Tools::getValue('accept')) {
+        if (Tools::getValue('onpay_hmac_sha1') && $paymentWindow->validatePayment(Tools::getAllValues()) && false !== Tools::getValue('accept')) {
             // The payment was successful, we'll unset the cart.
             Context::getContext()->cart = new Cart();
 
