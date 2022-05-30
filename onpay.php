@@ -328,13 +328,14 @@ class onpay extends PaymentModule {
         if($this->getOnpayClient()->isAuthorized()) {
             $order = $params['cart'];
             $currency = new Currency($order->id_currency);
+            $currencyUtil = new \OnPay\API\Util\Currency($currency->iso_code);
 
             if (null === $this->currencyHelper->fromNumeric($currency->iso_code_num)) {
                 // If we can't determine the currency, we wont show the payment method at all.
                 return;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_CARD)) {
                 $cardLogos = [];
                 foreach (json_decode(Configuration::get(self::SETTING_ONPAY_CARDLOGOS), true) as $cardLogo) {
                     $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/' . $cardLogo . '.svg');
@@ -351,7 +352,7 @@ class onpay extends PaymentModule {
                 $payment_options[] = $cardOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_VIABILL)) {
                 $vbOption = new PaymentOption();
                 $vbOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through ViaBill'))
@@ -362,7 +363,7 @@ class onpay extends PaymentModule {
                 $payment_options[] = $vbOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_ANYDAY)) {
                 $asOption = new PaymentOption();
                 $asOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Anyday'))
@@ -373,7 +374,7 @@ class onpay extends PaymentModule {
                 $payment_options[] = $asOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_VIPPS)) {
                 $vipOption = new PaymentOption();
                 $vipOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Vipps'))
@@ -384,7 +385,7 @@ class onpay extends PaymentModule {
                 $payment_options[] = $vipOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_SWISH)) {
                 $swiOption = new PaymentOption();
                 $swiOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Swish'))
@@ -396,7 +397,7 @@ class onpay extends PaymentModule {
             }
 
             // Mobilepay is not available in testmode
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_MOBILEPAY)) {
                 $mpoOption = new PaymentOption();
                 $mpoOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through MobilePay'))

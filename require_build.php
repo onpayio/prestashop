@@ -42,6 +42,7 @@ class_alias('PrestashopOnpay\OnPay\API\Transaction\TransactionHistory', 'OnPay\A
 class_alias('PrestashopOnpay\OnPay\API\Util\Converter', 'OnPay\API\Util\Converter');
 class_alias('PrestashopOnpay\OnPay\API\Util\Link', 'OnPay\API\Util\Link');
 class_alias('PrestashopOnpay\OnPay\API\Util\Pagination', 'OnPay\API\Util\Pagination');
+class_alias('PrestashopOnpay\OnPay\API\Util\Currency', 'OnPay\API\Util\Currency');
 
 /**
  * Other Classes
