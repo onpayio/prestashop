@@ -120,16 +120,16 @@
         },
         {
             "name": "onpayio/php-sdk",
-            "version": "1.0.21",
+            "version": "1.0.22",
             "source": {
                 "type": "git",
                 "url": "https://github.com/onpayio/php-sdk.git",
-                "reference": "a71552e7c20e10fe7aa5bc8bc78922dcf1c5072d"
+                "reference": "7aae72fa9abb196c7245d5dc49b5a439aace3390"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/a71552e7c20e10fe7aa5bc8bc78922dcf1c5072d",
-                "reference": "a71552e7c20e10fe7aa5bc8bc78922dcf1c5072d",
+                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/7aae72fa9abb196c7245d5dc49b5a439aace3390",
+                "reference": "7aae72fa9abb196c7245d5dc49b5a439aace3390",
                 "shasum": ""
             },
             "require": {
@@ -151,9 +151,9 @@
             "homepage": "https://github.com/onpayio/php-sdk",
             "support": {
                 "issues": "https://github.com/onpayio/php-sdk/issues",
-                "source": "https://github.com/onpayio/php-sdk/tree/1.0.21"
+                "source": "https://github.com/onpayio/php-sdk/tree/1.0.22"
             },
-            "time": "2022-03-31T07:57:24+00:00"
+            "time": "2022-05-30T13:05:04+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
