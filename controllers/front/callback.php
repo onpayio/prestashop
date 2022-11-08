@@ -70,6 +70,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
         // Get orderId
         $orderId = OrderCore::getOrderByCartId($cart->id);
+        $currency = new Currency($cart->id_currency);
+        $this->context->currency = $currency; // Set the context currency to cart currency
 
         // Check that order is not yet created, or in process of creation.
         if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
@@ -77,7 +79,6 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $onpay->lockCart($cart->id);
 
             $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-            $currency = $this->context->currency;
 
             $this->module->validateOrder(
                 $cart->id,
@@ -89,7 +90,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
                     'transaction_id' => $onpayUuid,
                     'card_brand' => Tools::getValue('onpay_cardtype')
                 ],
-                (int)$currency->id,
+                $currency->id,
                 false,
                 $customer->secure_key
             );
