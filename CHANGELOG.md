@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Fixed bug when getting currency for cart upon validation of order.
 
 ## [1.0.15] - 2022-04-07
 - Improved validation of parameters on callback and decline endpoints.
