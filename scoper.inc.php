@@ -23,8 +23,8 @@ return [
             'composer.json',
         ]),
     ],
-    'files-whitelist' => $filesWhitelist,
-    'whitelist-global-constants' => false,
-    'whitelist-global-classes' => false,
-    'whitelist-global-functions' => false,
+    'exclude-files' => $filesWhitelist,
+    'expose-global-constants' => false,
+    'expose-global-classes' => false,
+    'expose-global-functions' => false,
 ];
