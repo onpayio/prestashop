@@ -1,4 +1,4 @@
-# OnPay - Prestashop 1.7 module
+# OnPay - Prestashop 1.7/8.X module
 
 Module for Prestashop webshop platform, based on the official OnPay PHP SDK.
 The module adds the following functionality to Prestashop:
@@ -7,7 +7,7 @@ The module adds the following functionality to Prestashop:
 - Management of transaction on order pages in backoffice.
 
 The module is tested and confirmed working on 
-- Prestashop v. 1.7.8.7
+- Prestashop v. 1.7.8.8 and v. 8.0.1
 
 ## Usage
 1. Install module as any other Prestashop module.
