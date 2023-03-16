@@ -28,6 +28,7 @@ use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 require_once __DIR__ . '/require.php';
 require_once __DIR__ . '/classes/CurrencyHelper.php';
 require_once __DIR__ . '/classes/TokenStorage.php';
+require_once __DIR__ . '/classes/Release.php';
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -54,6 +55,7 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_AUTOCAPTURE_STATUS = 'SETTING_ONPAY_AUTOCAPTURE_STATUS';
     const SETTING_ONPAY_LOCKEDCART_TABLE = 'onpay_locked_cart';
     const SETTING_ONPAY_LOCKEDCART_TABLE_CREATED = 'ONPAY_LOCKEDCART_CREATED';
+    const SETTING_ONPAY_RELEASE_INFO = 'ONPAY_RELEASE_INFO';
 
     protected $htmlContent = '';
 
@@ -96,7 +98,7 @@ class onpay extends PaymentModule {
     }
 
     private function registerHooks() {
-        $hookVersion = 4;
+        $hookVersion = 5;
         $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
 
         if ($currentHookVersion >= $hookVersion) {
@@ -119,14 +121,26 @@ class onpay extends PaymentModule {
             4 => [
                 'actionOrderStatusUpdate',
             ],
+            5 => [
+                'dashboardZoneTwo',
+            ],
+        ];
+
+        $positions = [
+            'dashboardZoneTwo' => 1,
         ];
 
         $highestVersion = 0;
         foreach ($hooks as $version => $versionHooks) {
-            if ($hookVersion >= $version) {
+            if ($hookVersion <= $version) {
                 foreach ($versionHooks as $hook) {
                     if (!$this->isRegisteredInHook($hook)) {
                         $this->registerHook($hook);
+                        // Update position if requested
+                        if (array_key_exists($hook, $positions)) {
+                            $hookId = Hook::getIdByName($hook);
+                            $this->updatePosition($hookId, false, $positions[$hook]);
+                        }
                     }
                 }
                 $highestVersion = $hookVersion;
@@ -248,6 +262,8 @@ class onpay extends PaymentModule {
      * Administration page
      */
     public function getContent() {
+        $this->htmlContent .= $this->renderReleaseInfo();
+
         if('true' === Tools::getValue('detach')) {
             $params = [];
             $params['token'] = Tools::getAdminTokenLite('AdminModules');
@@ -579,6 +595,9 @@ class onpay extends PaymentModule {
         return $this->display(__FILE__, $template);
     }
 
+    public function hookDashboardZoneTwo() {
+        return $this->renderReleaseInfo();
+    }
 
     /**
      * Utilities
@@ -760,6 +779,17 @@ class onpay extends PaymentModule {
             'logos' => $logos,
         ));
         return $this->display(__FILE__, 'views/templates/front/logos.tpl');
+    }
+    private function renderReleaseInfo() {
+        $releaseInfo = $this->getLatestModuleRelease();
+        if (version_compare($this->version, $releaseInfo->getLatestVersion(), '<')) {
+            $this->smarty->assign(array(
+                'release' => $releaseInfo,
+                'this_path' => $this->_path,
+            ));
+            return $this->display(__FILE__, 'views/admin/release.tpl');
+        }
+        return '';
     }
 
     /**
@@ -1339,5 +1369,64 @@ class onpay extends PaymentModule {
         $baseUrl = array_shift($baseUrl);
         $fullUrl = $baseUrl . '?' . http_build_query($params);
         return $fullUrl;
+    }
+
+    private function getLatestModuleRelease() {
+        $release = new Release();
+
+        // If get release info from config key
+        $config = Configuration::get(self::SETTING_ONPAY_RELEASE_INFO);
+        if (false !== $config) {
+            $release = Release::fromString($config);
+            // If release info is less than a day old, well simply return this info.
+            if (time() - $release->getLastCheck() < 86400) {
+                return $release;
+            }
+        }
+        
+        // Fetch release info from OnPay
+        $releaseUri = 'https://api.onpay.io/plugin/release/prestashop';
+        $response = $this->httpGet($releaseUri);
+
+        // Set check timestamp
+        $release->setLastCheck(time());
+
+        // Examine if a response is present
+        if (null !== $response) {
+            $releaseResponse = json_decode($response, true);
+            if (null !== $releaseResponse) {
+                // If tag_name is present, set value as latest version
+                if (array_key_exists('tag_name', $releaseResponse)) {
+                    $release->setLatestVersion($releaseResponse['tag_name']);
+                }
+                // If asset with the name onpay.zip is present, set this as the latest download
+                if (array_key_exists('assets', $releaseResponse) && is_array($releaseResponse['assets'])) {
+                    foreach ($releaseResponse['assets'] as $asset) {
+                        if (array_key_exists('name', $asset) && 'onpay.zip' === $asset['name'] && array_key_exists('browser_download_url', $asset)) {
+                            $release->setLatestDownload($asset['browser_download_url']);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Set contents of release to config key
+        Configuration::updateValue(self::SETTING_ONPAY_RELEASE_INFO, $release->toString());
+
+        return $release;
+    }
+
+    private function httpGet($url) {
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_USERAGENT, "onpay-prestashop-module");
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($curl, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return $response;
     }
 }
