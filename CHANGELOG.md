@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.17] - 2023-04-18
 - Confirmed compability with Prestashop 1.7.8.8 and 8.0.1
 - Added function for showing alerts regarding available updates to the module, with info from OnPay API
+- Fixed buildscript prefixing
 
 ## [1.0.16] - 2022-11-09
 - Added check of currency, when showing compatible payment methods
