@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Get composer
-EXPECTED_SIGNATURE="91ce6cbf9463eae86ae9d5c21d42faa601a519f3fbb2b623a55ee24678079bd3"
-php -r "copy('https://getcomposer.org/download/2.5.4/composer.phar', 'composer.phar');"
+EXPECTED_SIGNATURE="566a6d1cf4be1cc3ac882d2a2a13817ffae54e60f5aa7c9137434810a5809ffc"
+php -r "copy('https://getcomposer.org/download/2.5.5/composer.phar', 'composer.phar');"
 ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha256', 'composer.phar');")"
 
 if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]
@@ -31,6 +31,10 @@ COMPOSER_BIN_DIR="$(composer global config bin-dir --absolute)"
 # Dump composer autoload for build folder
 php composer.phar dump-autoload --working-dir build --classmap-authoritative
 
+# Search and replace to set the prefix of the Composer Namespace properly, 
+# Since Composer skips this when dumping with --classmap-authoritative
+sed -i -e "s|'Composer\\\\\\\\InstalledVersions'|'PrestashopOnpay\\\\\\\\Composer\\\\\\\\InstalledVersions'|g" build/vendor/composer/autoload_classmap.php build/vendor/composer/autoload_static.php 
+
 # Remove composer
 rm composer.phar
 
@@ -45,6 +49,7 @@ rm -rf ./onpay/vendor
 rm ./onpay/build.sh
 rm ./onpay/composer.json
 rm ./onpay/composer.lock
+rm ./woocommerce-onpay/scoper.inc.php
 
 # Replace require file with build version
 rm ./onpay/require.php
