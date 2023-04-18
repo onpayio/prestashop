@@ -804,7 +804,9 @@ class onpay extends PaymentModule {
             'form' => array(
                 'legend' => array(
                     'title' => $this->l('OnPay settings'),
-                    'icon' => 'icon-envelope'
+                    'icon' => 'icon-envelope',
+                    'type' => 'legend',
+                    'name' => 'ONPAY_SETTINGS',
                 ),
                 'input' => array(
                     array(
@@ -851,8 +853,9 @@ class onpay extends PaymentModule {
                     ),
 
                     array(
-                        'type' => 'title',
-                        'label' => '<br /><h3>' . $this->l('Payment window') . '</h3>'
+                        'type' => 'legend',
+                        'label' => '<br /><h3>' . $this->l('Payment window') . '</h3>',
+                        'name' => 'ONPAY_PAYMENTWINDOW_SETTINGS',
                     ),
                     array(
                         'type' => 'switch',
@@ -930,8 +933,9 @@ class onpay extends PaymentModule {
                     ),
 
                     array(
-                        'type' => 'title',
-                        'label' => '<br /><h3>' . $this->l('Backoffice settings') . '</h3>'
+                        'type' => 'legend',
+                        'label' => '<br /><h3>' . $this->l('Backoffice settings') . '</h3>',
+                        'name' => 'ONPAY_BACKOFFICE_SETTINGS',
                     ),
                     array(
                         'type' => 'switch',
@@ -966,7 +970,9 @@ class onpay extends PaymentModule {
                     ),
 
                     array(
+                        'type' => 'legend',
                         'label' => '<br /><h3>' . $this->l('Gateway information') . '</h3>',
+                        'name' => 'ONPAY_GATEWAY_INFO',
                     ),
                     array(
                         'type' => 'text',
@@ -984,7 +990,9 @@ class onpay extends PaymentModule {
                     ),
                 ),
                 'submit' => array(
+                    'type' => 'button',
                     'title' => $this->l('Save'),
+                    'name' => 'ONPAY_PSETTINGS_SAVE',
                 )
             ),
         );
