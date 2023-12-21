@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "95b0348dce9448bbace51375afbe5bcf",
+    "content-hash": "896c8c3c98f8b20a4e5959b2192264c2",
     "packages": [
         {
             "name": "alcohol/iso4217",
@@ -120,16 +120,16 @@
         },
         {
             "name": "onpayio/php-sdk",
-            "version": "1.0.22",
+            "version": "1.0.28",
             "source": {
                 "type": "git",
                 "url": "https://github.com/onpayio/php-sdk.git",
-                "reference": "7aae72fa9abb196c7245d5dc49b5a439aace3390"
+                "reference": "4723faf59d4dd6a0b45c6fac794b1bc17139e9ac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/7aae72fa9abb196c7245d5dc49b5a439aace3390",
-                "reference": "7aae72fa9abb196c7245d5dc49b5a439aace3390",
+                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/4723faf59d4dd6a0b45c6fac794b1bc17139e9ac",
+                "reference": "4723faf59d4dd6a0b45c6fac794b1bc17139e9ac",
                 "shasum": ""
             },
             "require": {
@@ -151,9 +151,9 @@
             "homepage": "https://github.com/onpayio/php-sdk",
             "support": {
                 "issues": "https://github.com/onpayio/php-sdk/issues",
-                "source": "https://github.com/onpayio/php-sdk/tree/1.0.22"
+                "source": "https://github.com/onpayio/php-sdk/tree/1.0.28"
             },
-            "time": "2022-05-30T13:05:04+00:00"
+            "time": "2023-12-20T14:19:54+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
@@ -487,7 +487,7 @@
     "platform": [],
     "platform-dev": [],
     "platform-overrides": {
-        "php": "5.6"
+        "php": "7.1"
     },
-    "plugin-api-version": "2.2.0"
+    "plugin-api-version": "2.6.0"
 }
