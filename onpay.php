@@ -35,6 +35,8 @@ if (!defined('_PS_VERSION_')) {
 }
 
 class onpay extends PaymentModule {
+    const ONPAY_PLUGIN_VERSION = '1.0.17';
+    const ONPAY_PLATFORM_STRING = 'prestashop17/' . self::ONPAY_PLUGIN_VERSION . '/' . _PS_VERSION_;
     const SETTING_ONPAY_GATEWAY_ID = 'ONPAY_GATEWAY_ID';
     const SETTING_ONPAY_SECRET = 'ONPAY_SECRET';
     const SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY = 'ONPAY_EXTRA_PAYMENTS_MOBILEPAY';
@@ -77,7 +79,7 @@ class onpay extends PaymentModule {
     public function __construct() {
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.17';
+        $this->version = self::ONPAY_PLUGIN_VERSION;
         $this->ps_versions_compliancy = array('min' => '1.7.0.1', 'max' => _PS_VERSION_);
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
@@ -625,6 +627,7 @@ class onpay extends PaymentModule {
         $onPayAPI = new \OnPay\OnPayAPI($tokenStorage, [
             'client_id' => 'Onpay Prestashop',
             'redirect_uri' => $url,
+            'platform' => self::ONPAY_PLATFORM_STRING,
         ]);
         return $onPayAPI;
     }
@@ -1429,7 +1432,7 @@ class onpay extends PaymentModule {
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HEADER, false);
-        curl_setopt($curl, CURLOPT_USERAGENT, "onpay-prestashop-module");
+        curl_setopt($curl, CURLOPT_USERAGENT, self::ONPAY_PLATFORM_STRING);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($curl, CURLOPT_MAXREDIRS, 3);
         curl_setopt($curl, CURLOPT_TIMEOUT, 10);
