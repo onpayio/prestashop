@@ -35,7 +35,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 class onpay extends PaymentModule {
-    const ONPAY_PLUGIN_VERSION = '1.0.17';
+    const ONPAY_PLUGIN_VERSION = '1.0.18';
     const ONPAY_PLATFORM_STRING = 'prestashop17/' . self::ONPAY_PLUGIN_VERSION . '/' . _PS_VERSION_;
     const SETTING_ONPAY_GATEWAY_ID = 'ONPAY_GATEWAY_ID';
     const SETTING_ONPAY_SECRET = 'ONPAY_SECRET';
