@@ -134,7 +134,7 @@ class onpay extends PaymentModule {
 
         $highestVersion = 0;
         foreach ($hooks as $version => $versionHooks) {
-            if ($hookVersion <= $version) {
+            if ($hookVersion >= $version) {
                 foreach ($versionHooks as $hook) {
                     if (!$this->isRegisteredInHook($hook)) {
                         $this->registerHook($hook);
