@@ -1,5 +1,9 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ * 
  * MIT License
  *
  * Copyright (c) 2019 OnPay.io
@@ -23,6 +27,7 @@
  * SOFTWARE.
  */
 
+ if (!defined('_PS_VERSION_')) { exit; }
 
 class TokenStorage implements \OnPay\TokenStorageInterface
 {

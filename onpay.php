@@ -1,8 +1,12 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ * 
  * MIT License
  *
- * Copyright (c) 2019 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +87,7 @@ class onpay extends PaymentModule {
     public function __construct() {
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
-        $this->version = self::ONPAY_PLUGIN_VERSION;
+        $this->version = '1.0.18';
         $this->ps_versions_compliancy = array('min' => '1.7.0.1', 'max' => _PS_VERSION_);
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
@@ -324,7 +328,7 @@ class onpay extends PaymentModule {
             'error' => $error
         ));
 
-        return $this->display(__FILE__, 'views/admin/settings.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/settings.tpl');
     }
 
 
@@ -550,11 +554,10 @@ class onpay extends PaymentModule {
 
             return $payment_options;
         }
-        return;
     }
 
     public function hookDisplayAdminOrderMainBottom($params) {
-        return $this->handleAdminOrderHook('views/admin/order_details.tpl', $params);
+        return $this->handleAdminOrderHook('views/templates/admin/order_details.tpl', $params);
     }
 
     /**
@@ -566,7 +569,7 @@ class onpay extends PaymentModule {
         $order = new Order($params['id_order']);
         
         // Check if auto capture is enabled, and that new status is the correct status.
-        if (Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE) && intval(Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS)) === $newStatus->id) {
+        if (Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE) && (int)Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === $newStatus->id) {
             $payments = $order->getOrderPayments();
             $onPayAPI = $this->getOnpayClient();
 
@@ -603,7 +606,7 @@ class onpay extends PaymentModule {
             return;
         }
 
-        return $this->handleAdminOrderHook('views/admin/order_details_legacy.tpl', $params);
+        return $this->handleAdminOrderHook('views/templates/admin/order_details_legacy.tpl', $params);
     }
 
     private function handleAdminOrderHook($template, $params) {
@@ -912,7 +915,7 @@ class onpay extends PaymentModule {
                 'release' => $releaseInfo,
                 'this_path' => $this->_path,
             ));
-            return $this->display(__FILE__, 'views/admin/release.tpl');
+            return $this->display(__FILE__, 'views/templates/admin/release.tpl');
         }
         return '';
     }
