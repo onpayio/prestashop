@@ -12,10 +12,6 @@ then
     exit 1
 fi
 
-# Run composer
-php composer-setup.php
-rm composer-setup.php
-
 # Remove vendor directory
 rm -rf vendor
 rm -rf build
@@ -25,7 +21,9 @@ php composer.phar install
 
 # Require and run php-scoper
 php composer.phar global require humbug/php-scoper
+php composer.phar global require prestashop/autoindex
 COMPOSER_BIN_DIR="$(composer global config bin-dir --absolute)"
+COMPOSER_DIR="$(composer global config --absolute)"
 "$COMPOSER_BIN_DIR"/php-scoper add-prefix
 
 # Dump composer autoload for build folder
@@ -43,17 +41,29 @@ rm onpay.zip
 
 # Rsync contents of folder to new directory that we will use for the build
 rsync -Rr ./* ./onpay
+cp .htaccess ./onpay/.htaccess
 
 # Remove directories and files from newly created directory, that we won't need in final build
 rm -rf ./onpay/vendor
 rm ./onpay/build.sh
 rm ./onpay/composer.json
 rm ./onpay/composer.lock
-rm ./woocommerce-onpay/scoper.inc.php
+rm ./onpay/scoper.inc.php
 
 # Replace require file with build version
 rm ./onpay/require.php
 mv ./onpay/require_build.php ./onpay/require.php
+
+# Add out index template to the assets folder for autoindex
+mv "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php.bak
+cp ./index.php "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php
+
+# Add auto index files to build directory
+"$COMPOSER_BIN_DIR"/autoindex prestashop:add:index ./onpay
+
+# Reset autoindex template to default
+rm "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php
+mv "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php.bak "$COMPOSER_BIN_DIR"/../prestashop/autoindex/assets/index.php
 
 # Zip contents of newly created directory
 zip -r onpay.zip ./onpay

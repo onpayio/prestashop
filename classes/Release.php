@@ -1,8 +1,12 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ * 
  * MIT License
  *
- * Copyright (c) 2023 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +27,7 @@
  * SOFTWARE.
  */
 
+ if (!defined('_PS_VERSION_')) { exit; }
 
 class Release {
     /**
@@ -48,7 +53,7 @@ class Release {
         $release = new Release;
         
         if(array_key_exists('lastCheck', $values)) {
-            $release->setLastCheck(intval($values['lastCheck']));
+            $release->setLastCheck((int)$values['lastCheck']);
         }
         if(array_key_exists('latestVersion', $values)) {
             $release->setLatestVersion($values['latestVersion']);

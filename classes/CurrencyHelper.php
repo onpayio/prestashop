@@ -1,8 +1,12 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ * 
  * MIT License
  *
- * Copyright (c) 2019 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +27,8 @@
  * SOFTWARE.
  */
 
+ if (!defined('_PS_VERSION_')) { exit; }
+
 class CurrencyHelper
 {
     /** @var ISO4217 $converter */
@@ -41,7 +47,7 @@ class CurrencyHelper
      */
     public function minorToMajor($amount, $currency, $decimalSeparator = '.') {
         $currencyConverter = (object) $this->converter->getByNumeric($currency);
-        $amount = strval($amount);
+        $amount = (string)$amount;
         if ($currencyConverter->exp > 0) {
             $newAmount = str_pad($amount, $currencyConverter->exp + 1, '0', STR_PAD_LEFT);
             return substr_replace($newAmount, $decimalSeparator, (0 - $currencyConverter->exp), 0);
@@ -67,7 +73,7 @@ class CurrencyHelper
             $amountFraction = substr($amountArr[1], 0, $currencyConverter->exp);
             $fraction = substr_replace($fraction, $amountFraction, 0, strlen($amountFraction));
         }
-        return intval($integer . $fraction);
+        return (int)$integer . $fraction;
     }
 
     /**
