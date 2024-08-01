@@ -2,7 +2,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2019 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
         $onpayUuid = Tools::getValue('onpay_uuid');
         $onpayReference = Tools::getValue('onpay_reference');
+        $onpayAmount = Tools::getValue('onpay_amount');
+        $onpayCurrency = Tools::getValue('onpay_currency');
 
         // Validate query parameters and check that onpay_number is present
         if (!$paymentWindow->validatePayment(Tools::getAllValues()) || false === $onpayUuid) {
@@ -54,7 +56,15 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         if (!Validate::isLoadedObject($customer)) {
             $this->jsonResponse('Invalid customer', true, 500);
         }
-        $context->customer = $customer;
+        $context->customer = $customer;        
+        
+        // Set currency from callback
+        $currencyId = Currency::getIdByNumericIsoCode($onpayCurrency);
+        $currency = new Currency($currencyId);
+        if (!Validate::isLoadedObject($currency)) {
+            $this->jsonResponse('Invalid currency', true, 500);
+        }
+        $this->context->currency = $currency; // Set the context currency to cart currency
 
         // Check if module is enabled
         $authorized = false;
@@ -70,20 +80,20 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
         // Get orderId
         $orderId = OrderCore::getOrderByCartId($cart->id);
-        $currency = new Currency($cart->id_currency);
-        $this->context->currency = $currency; // Set the context currency to cart currency
 
         // Check that order is not yet created, or in process of creation.
         if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
             // Lock cart while creating order
             $onpay->lockCart($cart->id);
 
-            $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-
+            // Extract paid amount in major units
+            $currencyHelper = new CurrencyHelper();
+            $amountPaid = $currencyHelper->minorToMajor(intval($onpayAmount), $currency->iso_code_num);
+            
             $this->module->validateOrder(
                 $cart->id,
                 Configuration::get('PS_OS_PAYMENT'),
-                $total,
+                $amountPaid,
                 'OnPay',
                 null,
                 [
@@ -110,6 +120,6 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         } else {
             $response = ['error' => $message];
         }
-        die(Tools::jsonEncode($response));
+        die(json_encode($response));
     }
 }

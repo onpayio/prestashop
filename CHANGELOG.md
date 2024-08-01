@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Fixed usage of PS json encoder in callback controller
+- Add paid amount from OnPay when validating orders in callback controller
 
 ## [1.0.18] - 2024-04-12
 - Fixed bug in hook registration.
