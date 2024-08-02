@@ -45,6 +45,10 @@ class onpay extends PaymentModule {
     const SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS = 'ONPAY_EXTRA_PAYMENTS_VIPPS';
     const SETTING_ONPAY_EXTRA_PAYMENTS_SWISH = 'ONPAY_EXTRA_PAYMENTS_SWISH';
     const SETTING_ONPAY_EXTRA_PAYMENTS_CARD = 'ONPAY_EXTRA_PAYMENTS_CARD';
+    const SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA = 'ONPAY_EXTRA_PAYMENTS_KLARNA';
+    const SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL = 'ONPAY_EXTRA_PAYMENTS_PAYPAL';
+    const SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY = 'ONPAY_EXTRA_PAYMENTS_APPLE_PAY';
+    const SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY = 'ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY';
     const SETTING_ONPAY_PAYMENTWINDOW_DESIGN = 'ONPAY_PAYMENTWINDOW_DESIGN';
     const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE = 'ONPAY_PAYMENTWINDOW_LANGUAGE';
     const SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO = 'ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO';
@@ -100,7 +104,7 @@ class onpay extends PaymentModule {
     }
 
     private function registerHooks() {
-        $hookVersion = 5;
+        $hookVersion = 6;
         $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
 
         if ($currentHookVersion >= $hookVersion) {
@@ -125,6 +129,9 @@ class onpay extends PaymentModule {
             ],
             5 => [
                 'dashboardZoneTwo',
+            ],
+            6 => [
+                'displayBeforeBodyClosingTag',
             ],
         ];
 
@@ -242,6 +249,10 @@ class onpay extends PaymentModule {
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) ||
+            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) ||
             !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) ||
@@ -334,7 +345,74 @@ class onpay extends PaymentModule {
      * Hooks CSS to header in frontend
      */
     public function hookActionFrontControllerSetMedia() {
-        $this->context->controller->registerStylesheet($this->name . '-front_css', $this->_path.'/views/css/front.css');
+        $this->context->controller->registerStylesheet($this->name . '-front_css', $this->_path.'views/css/front.css');
+
+        // If either Apple Pay or Google Pay is enabled, register frontend script for managing these.
+        if ($this->showGAPay()) {
+            $this->context->controller->registerJavascript($this->name . '-script_jssdk', 'https://onpay.io/sdk/v1.js', ['server' => 'remote']);
+            $this->context->controller->registerJavascript($this->name . '-script', $this->_path.'views/js/apple_google_pay.js');
+        }
+    }
+
+    /**
+     * Hooks JS and variables
+     */
+    public function hookDisplayBeforeBodyClosingTag() {
+        $return = '';
+        // If either Apple Pay or Google Pay is enabled, register frontend script for managing these.
+        if ($this->showGAPay()) {
+            $appleId = null;
+            $googleId = null;
+            $optionFinder = new PaymentOptionsFinder;
+            $options = $optionFinder->present();
+
+            if (array_key_exists('onpay', $options)) {
+                foreach ($options['onpay'] as $option) {
+                    if (array_key_exists('module_name', $option) && array_key_exists('id', $option)) {
+                        if ($option['module_name'] === $this->name . '_applepay') {
+                            $appleId = $option['id'];
+                        }
+                        if ($option['module_name'] === $this->name . '_googlepay') {
+                            $googleId = $option['id'];
+                        }
+                    }
+                }
+            }
+
+            // Prepare Google and Apple Pay entries, add variable for IDs and hide inputs
+            $return = '<style type="text/css">';
+            if (null !== $appleId) {
+                $return .= '#' . $appleId . '-container {display:none}';
+                $return .= '#' . $appleId . '-container.show {display:inherit}';
+            }
+            if (null !== $googleId) {
+                $return .= '#' . $googleId . '-container {display:none}';
+                $return .= '#' . $googleId . '-container.show {display:inherit}';
+            }
+            $return .= '</style>';
+            $return .= '<script type="text/javascript">';
+            if (null !== $appleId) {
+                $return .= 'let appleId="' . $appleId . '";';
+            }
+            if (null !== $googleId) {
+                $return .= 'let googleId="' . $googleId . '";';
+            }
+            $return .= '</script>';
+        }
+        return $return;
+    }
+
+    private function showGAPay() {
+        if (
+            $this->context->controller->getPageName() === 'checkout' &&
+            (
+                Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) === '1' ||
+                Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) === '1'
+            )
+        ) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -368,6 +446,30 @@ class onpay extends PaymentModule {
                     ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos($cardLogos));
                 $payment_options[] = $cardOption;
+            }
+
+            // Not available in testmode
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_APPLEPAY)) {
+                $apOption = new PaymentOption();
+                $apOption->setModuleName($this->name . '_applepay')
+                    ->setCallToActionText($this->l('Pay using Apple Pay'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_APPLEPAY, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/apple-pay.svg')
+                    ]));
+                $payment_options[] = $apOption;
+            }
+
+            // Not available in testmode
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_GOOGLEPAY)) {
+                $gpOption = new PaymentOption();
+                $gpOption->setModuleName($this->name . '_googlepay')
+                    ->setCallToActionText($this->l('Pay using Google Pay'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_GOOGLEPAY, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/google-pay.svg')
+                    ]));
+                $payment_options[] = $gpOption;
             }
 
             if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_VIABILL)) {
@@ -414,8 +516,7 @@ class onpay extends PaymentModule {
                 $payment_options[] = $swiOption;
             }
 
-            // Mobilepay is not available in testmode
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_MOBILEPAY)) {
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_MOBILEPAY)) {
                 $mpoOption = new PaymentOption();
                 $mpoOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through MobilePay'))
@@ -424,6 +525,28 @@ class onpay extends PaymentModule {
                         $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/mobilepay.svg')
                     ]));
                 $payment_options[] = $mpoOption;
+            }
+
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_KLARNA)) {
+                $swiOption = new PaymentOption();
+                $swiOption->setModuleName($this->name)
+                    ->setCallToActionText($this->l('Pay through Klarna'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_KLARNA, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/klarna.svg')
+                    ]));
+                $payment_options[] = $swiOption;
+            }
+
+            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_PAYPAL)) {
+                $swiOption = new PaymentOption();
+                $swiOption->setModuleName($this->name)
+                    ->setCallToActionText($this->l('Pay through PayPal'))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_PAYPAL, $currency)))
+                    ->setAdditionalInformation($this->renderMethodLogos([
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/paypal.svg')
+                    ]));
+                $payment_options[] = $swiOption;
             }
 
             return $payment_options;
@@ -848,6 +971,26 @@ class onpay extends PaymentModule {
                                     'id' => 'ANYDAY_SPLIT',
                                     'name' => $this->l('Anyday'),
                                     'val' => true
+                                ],
+                                [
+                                    'id' => 'KLARNA',
+                                    'name' => $this->l('Klarna'),
+                                    'val' => true
+                                ],
+                                [
+                                    'id' => 'PAYPAL',
+                                    'name' => $this->l('PayPal'),
+                                    'val' => true
+                                ],
+                                [
+                                    'id' => 'APPLE_PAY',
+                                    'name' => $this->l('Apple Pay'),
+                                    'val' => true
+                                ],
+                                [
+                                    'id' => 'GOOGLE_PAY',
+                                    'name' => $this->l('Google Pay'),
+                                    'val' => true
                                 ]
                             ],
                             'id'=>'id',
@@ -1063,6 +1206,30 @@ class onpay extends PaymentModule {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, false);
             }
 
+            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA)) {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA, false);
+            }
+
+            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL)) {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL, false);
+            }
+
+            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY)) {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY, false);
+            }
+
+            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY)) {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY, true);
+            } else {
+                Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY, false);
+            }
+
             if(Tools::getValue(self::SETTING_ONPAY_TESTMODE)) {
                 Configuration::updateValue(self::SETTING_ONPAY_TESTMODE, true);
             } else {
@@ -1130,6 +1297,10 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)),
+            self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA)),
+            self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL)),
+            self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY)),
+            self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY)),
             self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)),
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)),
             self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO => Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)),
