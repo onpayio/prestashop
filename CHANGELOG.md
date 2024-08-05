@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.19] - 2024-08-05
 - Fixed usage of PS json encoder in callback controller
 - Add paid amount from OnPay when validating orders in callback controller
 - Added Klarna, Paypal, Apple Pay and Google Pay, payment options
