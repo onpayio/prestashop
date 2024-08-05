@@ -113,7 +113,6 @@ class onpay extends PaymentModule {
 
         $hooks = [
             1 => [
-                'paymentReturn',
                 'paymentOptions',
                 'adminOrder',
             ],
