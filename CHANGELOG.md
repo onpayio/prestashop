@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Fixed usage of PS json encoder in callback controller
 - Add paid amount from OnPay when validating orders in callback controller
+- Added Klarna, Paypal, Apple Pay and Google Pay, payment options
 
 ## [1.0.18] - 2024-04-12
 - Fixed bug in hook registration.
