@@ -3,10 +3,10 @@
  * @author OnPay.io
  * @copyright 2024 OnPay.io
  * @license MIT
- * 
+ *
  * MIT License
  *
- * Copyright (c) 2019 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,19 +26,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
- if (!defined('_PS_VERSION_')) { exit; }
+use OnPay\TokenStorageInterface;
 
-class TokenStorage implements \OnPay\TokenStorageInterface
+class TokenStorage implements TokenStorageInterface
 {
     /**
      * Should return the stored token, or null if no token is stored.
      *
-     * @return null|string
+     * @return string|null
      */
     public function getToken()
     {
-        if(!Configuration::get('ONPAY_TOKEN')) {
+        if (!Configuration::get('ONPAY_TOKEN')) {
             return null;
         }
         // ThirtyBees uses the pSQL alias method for escaping strings when using updateValue.

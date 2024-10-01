@@ -3,7 +3,7 @@
  * @author OnPay.io
  * @copyright 2024 OnPay.io
  * @license MIT
- * 
+ *
  * MIT License
  *
  * Copyright (c) 2024 OnPay.io
@@ -26,7 +26,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
+use OnPay\API\Exception\ApiException;
+use OnPay\API\Exception\ConnectionException;
+use OnPay\API\Exception\InvalidFormatException;
+use OnPay\API\Gateway\SimplePaymentWindowDesign;
+use OnPay\API\PaymentWindow;
+use OnPay\API\PaymentWindow\PaymentInfo;
+use OnPay\API\Transaction\TransactionHistory;
+use OnPay\API\Util\Currency as CurrencyUtil;
+use OnPay\OnPayAPI;
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
 require_once __DIR__ . '/require.php';
@@ -38,7 +50,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class onpay extends PaymentModule {
+class onpay extends PaymentModule
+{
     const ONPAY_PLUGIN_VERSION = '1.0.19';
     const ONPAY_PLATFORM_STRING = 'prestashop17/' . self::ONPAY_PLUGIN_VERSION . '/' . _PS_VERSION_;
     const SETTING_ONPAY_GATEWAY_ID = 'ONPAY_GATEWAY_ID';
@@ -70,28 +83,29 @@ class onpay extends PaymentModule {
     protected $htmlContent = '';
 
     /**
-     * @var \OnPay\OnPayAPI $client
+     * @var OnPayAPI
      */
     protected $client;
 
     /**
-     * @var array $_postErrors
+     * @var array
      */
     protected $_postErrors = [];
 
     /**
-     * @var CurrencyHelper $currencyHelper
+     * @var CurrencyHelper
      */
     protected $currencyHelper;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.18';
-        $this->ps_versions_compliancy = array('min' => '1.7.0.1', 'max' => _PS_VERSION_);
+        $this->version = '1.0.19';
+        $this->ps_versions_compliancy = ['min' => '1.7.0.1', 'max' => _PS_VERSION_];
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
-        $this->controllers = array('payment', 'callback');
+        $this->controllers = ['payment', 'callback'];
         $this->is_eu_compatible = 1;
 
         $this->bootstrap = true;
@@ -107,7 +121,8 @@ class onpay extends PaymentModule {
         $this->registerCartLockTable();
     }
 
-    private function registerHooks() {
+    private function registerHooks()
+    {
         $hookVersion = 6;
         $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
 
@@ -162,7 +177,8 @@ class onpay extends PaymentModule {
         Configuration::updateValue(self::SETTING_ONPAY_HOOK_VERSION, $highestVersion);
     }
 
-    private function registerOrderState() {
+    private function registerOrderState()
+    {
         $awaitingStateName = 'Awaiting OnPay Payment';
 
         // If configuration key exists no need to register state
@@ -172,13 +188,13 @@ class onpay extends PaymentModule {
 
         // check if order state exist
         $state_exist = false;
-        foreach (OrderState::getOrderStates((int)$this->context->language->id) as $state) {
+        foreach (OrderState::getOrderStates((int) $this->context->language->id) as $state) {
             if (in_array($awaitingStateName, $state)) {
                 $state_exist = true;
                 break;
             }
         }
- 
+
         // If the state does not exist, we create it.
         if (!$state_exist) {
             // Create new order state
@@ -186,7 +202,7 @@ class onpay extends PaymentModule {
             $orderState->color = '#34209E'; // PS color for awaiting
             $orderState->send_email = false;
             $orderState->module_name = $this->name;
-            $orderState->name = array();
+            $orderState->name = [];
             $languages = Language::getLanguages(false);
             foreach ($languages as $language) {
                 $orderState->name[$language['id_lang']] = $awaitingStateName;
@@ -198,18 +214,20 @@ class onpay extends PaymentModule {
         }
     }
 
-    private function unregisterOrderState() {
+    private function unregisterOrderState()
+    {
         if (Configuration::get(self::SETTING_ONPAY_ORDERSTATUS_AWAIT, null, null, null, 0) > 0) {
             $orderState = new OrderState(Configuration::get(self::SETTING_ONPAY_ORDERSTATUS_AWAIT));
             $orderState->delete();
         }
         return true;
     }
-    
+
     /**
      * Create table used for locked carts
      */
-    private function registerCartLockTable() {
+    private function registerCartLockTable()
+    {
         if (Configuration::get(self::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED, null, null, null, false)) {
             return;
         }
@@ -222,65 +240,68 @@ class onpay extends PaymentModule {
     /**
      * Drop table used for locked carts
      */
-    private function dropCartLockTable() {
+    private function dropCartLockTable()
+    {
         $tableName = _DB_PREFIX_ . self::SETTING_ONPAY_LOCKEDCART_TABLE;
         $db = Db::getInstance();
         return $db->execute('DROP TABLE `' . $tableName . '`') !== false;
     }
 
-    public function install() {
+    public function install()
+    {
         if (
-            !parent::install() ||
-            !Configuration::updateValue($this::SETTING_ONPAY_HOOK_VERSION, 0) ||
-            !Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode(['mastercard', 'visa'])) // Set default values for card logos
+            !parent::install()
+            || !Configuration::updateValue($this::SETTING_ONPAY_HOOK_VERSION, 0)
+            || !Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode(['mastercard', 'visa'])) // Set default values for card logos
         ) {
             return false;
         }
         return true;
     }
 
-    public function uninstall() {
+    public function uninstall()
+    {
         if (
-            parent::uninstall() == false ||
-            !$this->unregisterOrderState() ||
-            !$this->dropCartLockTable() ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_GATEWAY_ID) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_SECRET) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE_STATUS) ||
-            !Configuration::deleteByName($this::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED)
+            parent::uninstall() == false
+            || !$this->unregisterOrderState()
+            || !$this->dropCartLockTable()
+            || !Configuration::deleteByName($this::SETTING_ONPAY_GATEWAY_ID)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_SECRET)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_TOKEN)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_TESTMODE)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_CARDLOGOS)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_HOOK_VERSION)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_ORDERSTATUS_AWAIT)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_AUTOCAPTURE_STATUS)
+            || !Configuration::deleteByName($this::SETTING_ONPAY_LOCKEDCART_TABLE_CREATED)
         ) {
             return false;
         }
         return true;
     }
-
 
     /**
      * Administration page
      */
-    public function getContent() {
+    public function getContent()
+    {
         $this->htmlContent .= $this->renderReleaseInfo();
 
-        if('true' === Tools::getValue('detach')) {
+        if ('true' === Tools::getValue('detach')) {
             $params = [];
             $params['token'] = Tools::getAdminTokenLite('AdminModules');
             $params['controller'] = 'AdminModules';
@@ -293,7 +314,7 @@ class onpay extends PaymentModule {
         }
 
         $onpayApi = $this->getOnpayClient(true);
-        if(false !== Tools::getValue('code') || 'true' === Tools::getValue('refresh')) {
+        if (false !== Tools::getValue('code') || 'true' === Tools::getValue('refresh')) {
             if (!$onpayApi->isAuthorized() && false !== Tools::getValue('code')) {
                 $onpayApi->finishAuthorize(Tools::getValue('code'));
             }
@@ -301,8 +322,7 @@ class onpay extends PaymentModule {
             Configuration::updateValue(self::SETTING_ONPAY_SECRET, $onpayApi->gateway()->getPaymentWindowIntegrationSettings()->secret);
         }
 
-        if (Tools::isSubmit('btnSubmit'))
-        {
+        if (Tools::isSubmit('btnSubmit')) {
             if (!count($this->_postErrors)) {
                 $this->_postProcess();
             } else {
@@ -315,58 +335,58 @@ class onpay extends PaymentModule {
         $error = null;
         try {
             $this->htmlContent .= $this->renderAdministrationForm();
-        } catch (\OnPay\API\Exception\ApiException $exception) {
+        } catch (ApiException $exception) {
             // If we hit an ApiException, something bad happened with our token and we'll delete the token and show the auth-page again.
             Configuration::deleteByName(self::SETTING_ONPAY_TOKEN);
             $error = $this->displayError($this->l('Token from OnPay is either revoked from the OnPay gateway or is expired'));
         }
 
-        $this->smarty->assign(array(
+        $this->smarty->assign([
             'form' => $this->htmlContent,
             'isAuthorized' => $onpayApi->isAuthorized(),
             'authorizationUrl' => $onpayApi->authorize(),
-            'error' => $error
-        ));
+            'error' => $error,
+        ]);
 
         return $this->display(__FILE__, 'views/templates/admin/settings.tpl');
     }
 
-
-    /**
-     * Hooks
-     */
+    // Hooks
 
     /**
      * Hooks custom CSS to header in backoffice
      */
-    public function hookActionAdminControllerSetMedia() {
-        $this->context->controller->addCSS($this->_path.'/views/css/back.css');
+    public function hookActionAdminControllerSetMedia()
+    {
+        $this->context->controller->addCSS($this->_path . '/views/css/back.css');
         $this->context->controller->addJS($this->_path . '/views/js/back.js');
     }
 
     /**
      * Hooks CSS to header in frontend
      */
-    public function hookActionFrontControllerSetMedia() {
-        $this->context->controller->registerStylesheet($this->name . '-front_css', $this->_path.'views/css/front.css');
+    public function hookActionFrontControllerSetMedia()
+    {
+        $this->context->controller->registerStylesheet($this->name . '-front_css', $this->_path . 'views/css/front.css');
 
         // If either Apple Pay or Google Pay is enabled, register frontend script for managing these.
         if ($this->showGAPay()) {
             $this->context->controller->registerJavascript($this->name . '-script_jssdk', 'https://onpay.io/sdk/v1.js', ['server' => 'remote']);
-            $this->context->controller->registerJavascript($this->name . '-script', $this->_path.'views/js/apple_google_pay.js');
+            $this->context->controller->registerJavascript($this->name . '-script', $this->_path . 'views/js/apple_google_pay.js');
         }
     }
 
     /**
      * Hooks JS and variables
      */
-    public function hookDisplayBeforeBodyClosingTag() {
+    public function hookDisplayBeforeBodyClosingTag()
+    {
         $return = '';
         // If either Apple Pay or Google Pay is enabled, register frontend script for managing these.
         if ($this->showGAPay()) {
             $appleId = null;
             $googleId = null;
-            $optionFinder = new PaymentOptionsFinder;
+            $optionFinder = new PaymentOptionsFinder();
             $options = $optionFinder->present();
 
             if (array_key_exists('onpay', $options)) {
@@ -405,12 +425,13 @@ class onpay extends PaymentModule {
         return $return;
     }
 
-    private function showGAPay() {
+    private function showGAPay()
+    {
         if (
-            $this->context->controller->getPageName() === 'checkout' &&
-            (
-                Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) === '1' ||
-                Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) === '1'
+            $this->context->controller->getPageName() === 'checkout'
+            && (
+                Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) === '1'
+                || Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) === '1'
             )
         ) {
             return true;
@@ -423,18 +444,19 @@ class onpay extends PaymentModule {
      * @param array $params
      * @return mixed
      */
-    public function hookPaymentOptions(array $params) {
-        if($this->getOnpayClient()->isAuthorized()) {
+    public function hookPaymentOptions(array $params)
+    {
+        if ($this->getOnpayClient()->isAuthorized()) {
             $order = $params['cart'];
             $currency = new Currency($order->id_currency);
-            $currencyUtil = new \OnPay\API\Util\Currency($currency->iso_code);
+            $currencyUtil = new CurrencyUtil($currency->iso_code);
 
             if (null === $this->currencyHelper->fromNumeric($currency->iso_code_num)) {
                 // If we can't determine the currency, we wont show the payment method at all.
                 return;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_CARD)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_CARD)) {
                 $cardLogos = [];
                 foreach (json_decode(Configuration::get(self::SETTING_ONPAY_CARDLOGOS), true) as $cardLogo) {
                     $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/' . $cardLogo . '.svg');
@@ -446,108 +468,108 @@ class onpay extends PaymentModule {
                 $cardOption = new PaymentOption();
                 $cardOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay with credit card'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_CARD, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_CARD, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos($cardLogos));
                 $payment_options[] = $cardOption;
             }
 
             // Not available in testmode
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_APPLEPAY)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_APPLEPAY)) {
                 $apOption = new PaymentOption();
                 $apOption->setModuleName($this->name . '_applepay')
                     ->setCallToActionText($this->l('Pay using Apple Pay'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_APPLEPAY, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_APPLEPAY, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/apple-pay.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/apple-pay.svg'),
                     ]));
                 $payment_options[] = $apOption;
             }
 
             // Not available in testmode
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_GOOGLEPAY)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY) && !Configuration::get(self::SETTING_ONPAY_TESTMODE) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_GOOGLEPAY)) {
                 $gpOption = new PaymentOption();
                 $gpOption->setModuleName($this->name . '_googlepay')
                     ->setCallToActionText($this->l('Pay using Google Pay'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_GOOGLEPAY, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_GOOGLEPAY, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/google-pay.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/google-pay.svg'),
                     ]));
                 $payment_options[] = $gpOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_VIABILL)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_VIABILL)) {
                 $vbOption = new PaymentOption();
                 $vbOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through ViaBill'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIABILL, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_VIABILL, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/viabill.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/viabill.svg'),
                     ]));
                 $payment_options[] = $vbOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_ANYDAY)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_ANYDAY)) {
                 $asOption = new PaymentOption();
                 $asOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Anyday'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_ANYDAY, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_ANYDAY, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/anyday.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/anyday.svg'),
                     ]));
                 $payment_options[] = $asOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_VIPPS)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_VIPPS)) {
                 $vipOption = new PaymentOption();
                 $vipOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Vipps'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_VIPPS, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_VIPPS, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/vipps.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/vipps.svg'),
                     ]));
                 $payment_options[] = $vipOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_SWISH)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_SWISH)) {
                 $swiOption = new PaymentOption();
                 $swiOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Swish'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_SWISH, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_SWISH, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/swish.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/swish.svg'),
                     ]));
                 $payment_options[] = $swiOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_MOBILEPAY)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_MOBILEPAY)) {
                 $mpoOption = new PaymentOption();
                 $mpoOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through MobilePay'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_MOBILEPAY, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_MOBILEPAY, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/mobilepay.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/mobilepay.svg'),
                     ]));
                 $payment_options[] = $mpoOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_KLARNA)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_KLARNA)) {
                 $swiOption = new PaymentOption();
                 $swiOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through Klarna'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_KLARNA, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_KLARNA, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/klarna.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/klarna.svg'),
                     ]));
                 $payment_options[] = $swiOption;
             }
 
-            if(Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL) && $currencyUtil->isPaymentMethodAvailable(\OnPay\API\PaymentWindow::METHOD_PAYPAL)) {
+            if (Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL) && $currencyUtil->isPaymentMethodAvailable(PaymentWindow::METHOD_PAYPAL)) {
                 $swiOption = new PaymentOption();
                 $swiOption->setModuleName($this->name)
                     ->setCallToActionText($this->l('Pay through PayPal'))
-                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, \OnPay\API\PaymentWindow::METHOD_PAYPAL, $currency)))
+                    ->setForm($this->renderPaymentWindowForm($this->getPaymentWindow($order, PaymentWindow::METHOD_PAYPAL, $currency)))
                     ->setAdditionalInformation($this->renderMethodLogos([
-                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/paypal.svg')
+                        $cardLogos[] = Media::getMediaPath(_PS_MODULE_DIR_ . $this->name . '/views/img/paypal.svg'),
                     ]));
                 $payment_options[] = $swiOption;
             }
@@ -556,7 +578,8 @@ class onpay extends PaymentModule {
         }
     }
 
-    public function hookDisplayAdminOrderMainBottom($params) {
+    public function hookDisplayAdminOrderMainBottom($params)
+    {
         return $this->handleAdminOrderHook('views/templates/admin/order_details.tpl', $params);
     }
 
@@ -564,12 +587,13 @@ class onpay extends PaymentModule {
      * @param $params
      * @return mixed
      */
-    public function hookActionOrderStatusUpdate($params) {
+    public function hookActionOrderStatusUpdate($params)
+    {
         $newStatus = $params['newOrderStatus'];
         $order = new Order($params['id_order']);
-        
+
         // Check if auto capture is enabled, and that new status is the correct status.
-        if (Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE) && (int)Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === $newStatus->id) {
+        if (Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE) && (int) Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === $newStatus->id) {
             $payments = $order->getOrderPayments();
             $onPayAPI = $this->getOnpayClient();
 
@@ -586,7 +610,7 @@ class onpay extends PaymentModule {
                     if ($transaction->status === 'active' && $transaction->charged < $transaction->amount) {
                         try {
                             $onPayAPI->transaction()->captureTransaction($payment->transaction_id);
-                        } catch (\OnPay\API\Exception\ApiException $exception) {
+                        } catch (ApiException $exception) {
                             // No need to do anything here
                         }
                     }
@@ -600,7 +624,8 @@ class onpay extends PaymentModule {
      * @param $params
      * @return mixed
      */
-    public function hookAdminOrder($params) {
+    public function hookAdminOrder($params)
+    {
         if (in_array('displayAdminOrderMainBottom', Hook::$executed_hooks)) {
             // If hook displayAdminOrderMainBottom is executed, no need to do anything here, since the displayAdminOrder hook is used for legacy.
             return;
@@ -609,7 +634,8 @@ class onpay extends PaymentModule {
         return $this->handleAdminOrderHook('views/templates/admin/order_details_legacy.tpl', $params);
     }
 
-    private function handleAdminOrderHook($template, $params) {
+    private function handleAdminOrderHook($template, $params)
+    {
         $order = new Order($params['id_order']);
         $payments = $order->getOrderPayments();
 
@@ -619,29 +645,29 @@ class onpay extends PaymentModule {
             return;
         }
 
-        if(Tools::isSubmit('onpayCapture')) {
+        if (Tools::isSubmit('onpayCapture')) {
             foreach ($payments as $payment) {
                 try {
                     $onPayAPI->transaction()->captureTransaction($payment->transaction_id);
-                    $this->context->controller->confirmations[] = $this->l("Captured transaction");
-                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->confirmations[] = $this->l('Captured transaction');
+                } catch (ApiException $exception) {
                     $this->context->controller->errors[] = Tools::displayError($this->l('Could not capture payment'));
                 }
             }
         }
 
-        if(Tools::isSubmit('onpayCancel')) {
+        if (Tools::isSubmit('onpayCancel')) {
             foreach ($payments as $payment) {
                 try {
                     $onPayAPI->transaction()->cancelTransaction($payment->transaction_id);
-                    $this->context->controller->confirmations[] = $this->l("Cancelled transaction");
-                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->confirmations[] = $this->l('Cancelled transaction');
+                } catch (ApiException $exception) {
                     $this->context->controller->errors[] = Tools::displayError($this->l('Could not cancel transaction'));
                 }
             }
         }
 
-        if(Tools::isSubmit('refund_value')) {
+        if (Tools::isSubmit('refund_value')) {
             foreach ($payments as $payment) {
                 try {
                     $value = Tools::getValue('refund_value');
@@ -649,14 +675,14 @@ class onpay extends PaymentModule {
                     $value = str_replace('.', ',', $value);
                     $amount = $this->currencyHelper->majorToMinor($value, $currency, ',');
                     $onPayAPI->transaction()->refundTransaction($payment->transaction_id, $amount);
-                    $this->context->controller->confirmations[] = $this->l("Refunded transaction");
-                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->confirmations[] = $this->l('Refunded transaction');
+                } catch (ApiException $exception) {
                     $this->context->controller->errors[] = Tools::displayError($this->l('Could not refund transaction'));
                 }
             }
         }
 
-        if(Tools::isSubmit('onpayCapture_value')) {
+        if (Tools::isSubmit('onpayCapture_value')) {
             foreach ($payments as $payment) {
                 try {
                     $value = Tools::getValue('onpayCapture_value');
@@ -664,8 +690,8 @@ class onpay extends PaymentModule {
                     $value = str_replace('.', ',', $value);
                     $amount = $this->currencyHelper->majorToMinor($value, $currency, ',');
                     $onPayAPI->transaction()->captureTransaction($payment->transaction_id, $amount);
-                    $this->context->controller->confirmations[] = $this->l("Captured transaction");
-                } catch (\OnPay\API\Exception\ApiException $exception) {
+                    $this->context->controller->confirmations[] = $this->l('Captured transaction');
+                } catch (ApiException $exception) {
                     $this->context->controller->errors[] = Tools::displayError($this->l('Could not capture transaction'));
                 }
             }
@@ -677,7 +703,7 @@ class onpay extends PaymentModule {
             foreach ($payments as $payment) {
                 if ($payment->payment_method === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $onpayInfo = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
-                    $amount  = $this->currencyHelper->minorToMajor($onpayInfo->amount, $onpayInfo->currencyCode, ',');
+                    $amount = $this->currencyHelper->minorToMajor($onpayInfo->amount, $onpayInfo->currencyCode, ',');
                     $chargable = $onpayInfo->amount - $onpayInfo->charged;
                     $chargable = $this->currencyHelper->minorToMajor($chargable, $onpayInfo->currencyCode, ',');
                     $refunded = $this->currencyHelper->minorToMajor($onpayInfo->refunded, $onpayInfo->currencyCode, ',');
@@ -686,14 +712,14 @@ class onpay extends PaymentModule {
 
                     $currencyCode = $onpayInfo->currencyCode;
 
-                    array_walk($onpayInfo->history, function(\OnPay\API\Transaction\TransactionHistory $history) use($currencyCode) {
+                    array_walk($onpayInfo->history, function (TransactionHistory $history) use ($currencyCode) {
                         $amount = $history->amount;
                         $amount = $this->currencyHelper->minorToMajor($amount, $currencyCode, ',');
                         $history->amount = $amount;
                     });
 
                     $refundable = $onpayInfo->charged - $onpayInfo->refunded;
-                    $refundable = $this->currencyHelper->minorToMajor($refundable, $onpayInfo->currencyCode,',');
+                    $refundable = $this->currencyHelper->minorToMajor($refundable, $onpayInfo->currencyCode, ',');
                     $details[] = [
                         'details' => ['amount' => $amount, 'chargeable' => $chargable, 'refunded' => $refunded, 'charged' => $charged, 'refundable' => $refundable, 'currency' => $currency],
                         'payment' => $payment,
@@ -701,28 +727,29 @@ class onpay extends PaymentModule {
                     ];
                 }
             }
-        } catch (\OnPay\API\Exception\ApiException $exception) {
+        } catch (ApiException $exception) {
             // If there was problems, we'll show the same as someone with an unauthed acc
-            $this->smarty->assign(array(
+            $this->smarty->assign([
                 'paymentdetails' => $details,
                 'url' => '',
                 'isAuthorized' => false,
                 'this_path' => $this->_path,
-            ));
+            ]);
             return $this->display(__FILE__, $template);
         }
 
         $url = $_SERVER['REQUEST_URI'];
-        $this->smarty->assign(array(
+        $this->smarty->assign([
             'paymentdetails' => $details,
             'url' => $url,
             'isAuthorized' => $this->getOnpayClient()->isAuthorized(),
             'this_path' => $this->_path,
-        ));
+        ]);
         return $this->display(__FILE__, $template);
     }
 
-    public function hookDashboardZoneTwo() {
+    public function hookDashboardZoneTwo()
+    {
         return $this->renderReleaseInfo();
     }
 
@@ -733,14 +760,15 @@ class onpay extends PaymentModule {
     /**
      * Returns an instantiated OnPay API client
      *
-     * @return \OnPay\OnPayAPI
+     * @return OnPayAPI
      */
-    private function getOnpayClient($prepareRedirectUri = false) {
+    private function getOnpayClient($prepareRedirectUri = false)
+    {
         $tokenStorage = new TokenStorage();
 
         $params = [];
         // AdminToken cannot be generated on payment pages
-        if($prepareRedirectUri) {
+        if ($prepareRedirectUri) {
             $params['token'] = Tools::getAdminTokenLite('AdminModules');
             $params['controller'] = 'AdminModules';
             $params['configure'] = 'onpay';
@@ -749,7 +777,7 @@ class onpay extends PaymentModule {
         }
 
         $url = $this->generateUrl($params);
-        $onPayAPI = new \OnPay\OnPayAPI($tokenStorage, [
+        $onPayAPI = new OnPayAPI($tokenStorage, [
             'client_id' => 'Onpay Prestashop',
             'redirect_uri' => $url,
             'platform' => self::ONPAY_PLATFORM_STRING,
@@ -762,14 +790,15 @@ class onpay extends PaymentModule {
      * @param $order
      * @param $payment
      * @param $currency
-     * @return \OnPay\API\PaymentWindow
+     * @return PaymentWindow
      */
-    private function getPaymentWindow($order, $payment, $currency) {
+    private function getPaymentWindow($order, $payment, $currency)
+    {
         // We'll need to find out details about the currency, and format the order total amount accordingly
         $isoCurrency = $this->currencyHelper->fromNumeric($currency->iso_code_num);
         $orderTotal = number_format($order->getOrderTotal(), $isoCurrency->exp, '', '');
 
-        $paymentWindow = new \OnPay\API\PaymentWindow();
+        $paymentWindow = new PaymentWindow();
         $paymentWindow->setGatewayId(Configuration::get(self::SETTING_ONPAY_GATEWAY_ID));
         $paymentWindow->setSecret(Configuration::get(self::SETTING_ONPAY_SECRET));
         $paymentWindow->setCurrency($isoCurrency->alpha3);
@@ -778,18 +807,18 @@ class onpay extends PaymentModule {
         $paymentWindow->setReference($order->id);
         $paymentWindow->setAcceptUrl($this->context->link->getModuleLink('onpay', 'payment', ['accept' => 1], Configuration::get('PS_SSL_ENABLED')));
         $paymentWindow->setDeclineUrl($this->context->link->getModuleLink('onpay', 'payment', [], Configuration::get('PS_SSL_ENABLED')));
-        $paymentWindow->setType("payment");
+        $paymentWindow->setType('payment');
         $paymentWindow->setCallbackUrl($this->context->link->getModuleLink('onpay', 'callback', [], Configuration::get('PS_SSL_ENABLED'), null));
-        $paymentWindow->setWebsite(Tools::getHttpHost(true).__PS_BASE_URI__);
+        $paymentWindow->setWebsite(Tools::getHttpHost(true) . __PS_BASE_URI__);
         $paymentWindow->setPlatform('prestashop17', $this->version, _PS_VERSION_);
 
-        if(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)) {
+        if (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN)) {
             $paymentWindow->setDesign(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
         }
 
         if (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO)) {
             $paymentWindow->setLanguage($this->getPaymentWindowLanguageByPSLanguage($this->context->language->iso_code));
-        } else if (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)) {
+        } elseif (Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE)) {
             $paymentWindow->setLanguage(Configuration::get(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
         }
 
@@ -807,7 +836,7 @@ class onpay extends PaymentModule {
         $delivery_country = new Country($delivery_address->id_country);
         $delivery_state = new State($delivery_address->id_state);
 
-        $paymentInfo = new \OnPay\API\PaymentWindow\PaymentInfo();
+        $paymentInfo = new PaymentInfo();
 
         $this->setPaymentInfoParameter($paymentInfo, 'AccountId', $customer->id);
 
@@ -852,14 +881,14 @@ class onpay extends PaymentModule {
 
         $this->setPaymentInfoParameter($paymentInfo, 'Name', $customer->firstname . ' ' . $customer->lastname);
         $this->setPaymentInfoParameter($paymentInfo, 'Email', $customer->email);
-        $this->setPaymentInfoParameter($paymentInfo, 'PhoneHome',  [null, $invoice_address->phone]);
+        $this->setPaymentInfoParameter($paymentInfo, 'PhoneHome', [null, $invoice_address->phone]);
         $this->setPaymentInfoParameter($paymentInfo, 'PhoneMobile', [null, $invoice_address->phone_mobile]);
         $this->setPaymentInfoParameter($paymentInfo, 'DeliveryEmail', $customer->email);
 
         $paymentWindow->setInfo($paymentInfo);
 
         // Enable testmode
-        if(Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
+        if (Configuration::get(self::SETTING_ONPAY_TESTMODE)) {
             $paymentWindow->setTestMode(1);
         } else {
             $paymentWindow->setTestMode(0);
@@ -877,9 +906,10 @@ class onpay extends PaymentModule {
      * @param $parameter
      * @param $value
      */
-    private function setPaymentInfoParameter($paymentInfo, $parameter, $value) {
-        if ($paymentInfo instanceof \OnPay\API\PaymentWindow\PaymentInfo) {
-            $method = 'set'.$parameter;
+    private function setPaymentInfoParameter($paymentInfo, $parameter, $value)
+    {
+        if ($paymentInfo instanceof PaymentInfo) {
+            $method = 'set' . $parameter;
             if (method_exists($paymentInfo, $method)) {
                 try {
                     if (is_array($value)) {
@@ -887,34 +917,37 @@ class onpay extends PaymentModule {
                     } else {
                         call_user_func([$paymentInfo, $method], $value);
                     }
-                } catch (\OnPay\API\Exception\InvalidFormatException $e) {
+                } catch (InvalidFormatException $e) {
                     // No need to do anything. If the value fails, we'll simply ignore the value.
                 }
             }
         }
     }
 
-    private function renderPaymentWindowForm(\OnPay\API\PaymentWindow $paymentWindow) {
-        $this->smarty->assign(array(
+    private function renderPaymentWindowForm(PaymentWindow $paymentWindow)
+    {
+        $this->smarty->assign([
             'form_action' => $paymentWindow->getActionUrl(),
-            'form_fields' => $paymentWindow->getFormFields()
-        ));
+            'form_fields' => $paymentWindow->getFormFields(),
+        ]);
         return $this->display(__FILE__, 'views/templates/front/payment.tpl');
     }
 
-    private function renderMethodLogos($logos = []) {
-        $this->smarty->assign(array(
+    private function renderMethodLogos($logos = [])
+    {
+        $this->smarty->assign([
             'logos' => $logos,
-        ));
+        ]);
         return $this->display(__FILE__, 'views/templates/front/logos.tpl');
     }
-    private function renderReleaseInfo() {
+    private function renderReleaseInfo()
+    {
         $releaseInfo = $this->getLatestModuleRelease();
         if (version_compare($this->version, $releaseInfo->getLatestVersion(), '<')) {
-            $this->smarty->assign(array(
+            $this->smarty->assign([
                 'release' => $releaseInfo,
                 'this_path' => $this->_path,
-            ));
+            ]);
             return $this->display(__FILE__, 'views/templates/admin/release.tpl');
         }
         return '';
@@ -924,353 +957,354 @@ class onpay extends PaymentModule {
      * Renders form for administration page
      *
      * @return mixed
-     * @throws \OnPay\API\Exception\ApiException
-     * @throws \OnPay\API\Exception\ConnectionException
+     * @throws ApiException
+     * @throws ConnectionException
      */
-    private function renderAdministrationForm() {
-        $fields_form = array(
-            'form' => array(
-                'legend' => array(
+    private function renderAdministrationForm()
+    {
+        $fields_form = [
+            'form' => [
+                'legend' => [
                     'title' => $this->l('OnPay settings'),
                     'icon' => 'icon-envelope',
                     'type' => 'legend',
                     'name' => 'ONPAY_SETTINGS',
-                ),
-                'input' => array(
-                    array(
+                ],
+                'input' => [
+                    [
                         'type' => 'checkbox',
                         'label' => $this->l('Payment methods'),
                         'name' => 'ONPAY_EXTRA_PAYMENTS',
                         'required' => false,
-                        'values'=>[
-                            'query'=> [
+                        'values' => [
+                            'query' => [
                                 [
                                     'id' => 'CARD',
                                     'name' => $this->l('Card'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'MOBILEPAY',
                                     'name' => $this->l('MobilePay'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'VIPPS',
                                     'name' => $this->l('Vipps'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'SWISH',
                                     'name' => $this->l('Swish'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'VIABILL',
                                     'name' => $this->l('ViaBill'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'ANYDAY_SPLIT',
                                     'name' => $this->l('Anyday'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'KLARNA',
                                     'name' => $this->l('Klarna'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'PAYPAL',
                                     'name' => $this->l('PayPal'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'APPLE_PAY',
                                     'name' => $this->l('Apple Pay'),
-                                    'val' => true
+                                    'val' => true,
                                 ],
                                 [
                                     'id' => 'GOOGLE_PAY',
                                     'name' => $this->l('Google Pay'),
-                                    'val' => true
-                                ]
+                                    'val' => true,
+                                ],
                             ],
-                            'id'=>'id',
-                            'name'=>'name'
-                        ]
-                    ),
+                            'id' => 'id',
+                            'name' => 'name',
+                        ],
+                    ],
 
-                    array(
+                    [
                         'type' => 'legend',
                         'label' => '<br /><h3>' . $this->l('Payment window') . '</h3>',
                         'name' => 'ONPAY_PAYMENTWINDOW_SETTINGS',
-                    ),
-                    array(
+                    ],
+                    [
                         'type' => 'switch',
                         'label' => $this->l('Test Mode'),
                         'name' => self::SETTING_ONPAY_TESTMODE,
                         'required' => false,
-                        'values'=>[
-                            array(
+                        'values' => [
+                            [
                                 'id' => 'ENABLED',
                                 'value' => '1',
-                                'label' => $this->l('On')
-                            ),
-                            array(
+                                'label' => $this->l('On'),
+                            ],
+                            [
                                 'id' => 'ENABLED',
                                 'value' => false,
-                                'label' => $this->l('Off')
-                            )
-                        ]
-                    ),
-                    array(
+                                'label' => $this->l('Off'),
+                            ],
+                        ],
+                    ],
+                    [
                         'type' => 'select',
                         'lang' => true,
                         'label' => $this->l('Payment window design'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN,
-                        'options' => array(
+                        'options' => [
                             'query' => $this->getPaymentWindowDesignOptions(),
                             'id' => 'id_option',
-                            'name' => 'name'
-                        )
-                    ),
-                    array(
+                            'name' => 'name',
+                        ],
+                    ],
+                    [
                         'type' => 'select',
                         'lang' => true,
                         'label' => $this->l('Payment window language'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE,
                         'options' => [
-                            'query'=> $this->getPaymentWindowLanguageOptions(),
+                            'query' => $this->getPaymentWindowLanguageOptions(),
                             'id' => 'id_option',
                             'name' => 'name',
-                        ]
-                    ),
-                    array(
+                        ],
+                    ],
+                    [
                         'type' => 'switch',
                         'label' => $this->l('Automatic payment window language'),
                         'desc' => $this->l('Overrides language chosen above, and instead determines payment window language based on frontoffice language'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO,
                         'required' => false,
-                        'values'=>[
-                            array(
+                        'values' => [
+                            [
                                 'id' => 'ENABLED',
                                 'value' => '1',
-                            ),
-                            array(
+                            ],
+                            [
                                 'id' => 'DISABLED',
-                                'value' => false
-                            )
-                        ]
-                    ),
-                    array(
+                                'value' => false,
+                            ],
+                        ],
+                    ],
+                    [
                         'type' => 'checkbox',
                         'label' => $this->l('Card logos'),
                         'desc' => $this->l('Card logos shown for the Card payment method'),
                         'name' => self::SETTING_ONPAY_CARDLOGOS,
-                        'values' => array(
+                        'values' => [
                             'query' => $this->getCardLogoOptions(),
                             'id' => 'id_option',
-                            'name' => 'name'
-                        ),
-                        'expand' => array(
-                            array('print_total' => count($this->getCardLogoOptions())),
+                            'name' => 'name',
+                        ],
+                        'expand' => [
+                            ['print_total' => count($this->getCardLogoOptions())],
                             'default' => 'show',
-                            'show' => array('text' => $this->l('Show'), 'icon' => 'plus-sign-alt'),
-                            'hide' => array('text' => $this->l('Hide'), 'icon' => 'minus-sign-alt')
-                        ),
-                    ),
+                            'show' => ['text' => $this->l('Show'), 'icon' => 'plus-sign-alt'],
+                            'hide' => ['text' => $this->l('Hide'), 'icon' => 'minus-sign-alt'],
+                        ],
+                    ],
 
-                    array(
+                    [
                         'type' => 'legend',
                         'label' => '<br /><h3>' . $this->l('Backoffice settings') . '</h3>',
                         'name' => 'ONPAY_BACKOFFICE_SETTINGS',
-                    ),
-                    array(
+                    ],
+                    [
                         'type' => 'switch',
                         'label' => $this->l('Automatic capture'),
                         'desc' => $this->l('Automatically capture remaining amounts on transactions, when orders are marked with status chosen below.'),
                         'name' => self::SETTING_ONPAY_AUTOCAPTURE,
                         'required' => false,
-                        'values'=>[
-                            array(
+                        'values' => [
+                            [
                                 'id' => 'ENABLED',
                                 'value' => '1',
-                                'label' => $this->l('On')
-                            ),
-                            array(
+                                'label' => $this->l('On'),
+                            ],
+                            [
                                 'id' => 'ENABLED',
                                 'value' => false,
-                                'label' => $this->l('Off')
-                            )
-                        ]
-                    ),
-                    array(
+                                'label' => $this->l('Off'),
+                            ],
+                        ],
+                    ],
+                    [
                         'type' => 'select',
                         'lang' => true,
                         'label' => $this->l('Automatic capture status'),
                         'desc' => $this->l('Status that triggers automatic capture of transaction, if enabled above.'),
                         'name' => self::SETTING_ONPAY_AUTOCAPTURE_STATUS,
                         'options' => [
-                            'query'=> $this->getOrderStatuses(),
+                            'query' => $this->getOrderStatuses(),
                             'id' => 'id_option',
                             'name' => 'name',
-                        ]
-                    ),
+                        ],
+                    ],
 
-                    array(
+                    [
                         'type' => 'legend',
                         'label' => '<br /><h3>' . $this->l('Gateway information') . '</h3>',
                         'name' => 'ONPAY_GATEWAY_INFO',
-                    ),
-                    array(
+                    ],
+                    [
                         'type' => 'text',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Gateway ID'),
                         'name' => self::SETTING_ONPAY_GATEWAY_ID,
-                    ),
-                    array(
+                    ],
+                    [
                         'type' => 'text',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Window secret'),
                         'name' => self::SETTING_ONPAY_SECRET,
-                    ),
-                ),
-                'submit' => array(
+                    ],
+                ],
+                'submit' => [
                     'type' => 'button',
                     'title' => $this->l('Save'),
                     'name' => 'ONPAY_PSETTINGS_SAVE',
-                )
-            ),
-        );
+                ],
+            ],
+        ];
 
         $helper = new HelperForm();
         $helper->show_toolbar = false;
         $helper->table = $this->table;
-        $lang = new Language((int)Configuration::get('PS_LANG_DEFAULT'));
+        $lang = new Language((int) Configuration::get('PS_LANG_DEFAULT'));
         $helper->default_form_language = $lang->id;
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') ? Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') : 0;
-        $this->fields_form = array();
-        $helper->id = (int)Tools::getValue('id_carrier');
+        $this->fields_form = [];
+        $helper->id = (int) Tools::getValue('id_carrier');
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'btnSubmit';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false) . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
-        $helper->tpl_vars = array(
+        $helper->tpl_vars = [
             'fields_value' => $this->getConfigFieldsValues(),
             'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id
-        );
+            'id_language' => $this->context->language->id,
+        ];
 
-        return $helper->generateForm(array($fields_form));
+        return $helper->generateForm([$fields_form]);
     }
 
     /**
      * Handles posts to administration page
      */
-    private function _postProcess() {
-        if (Tools::isSubmit('btnSubmit'))
-        {
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)) {
+    private function _postProcess()
+    {
+        if (Tools::isSubmit('btnSubmit')) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIABILL, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_ANYDAY, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_VIPPS, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_SWISH, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_CARD, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_KLARNA, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_PAYPAL, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_APPLE_PAY, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY)) {
+            if (Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY)) {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_GOOGLE_PAY, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_TESTMODE)) {
+            if (Tools::getValue(self::SETTING_ONPAY_TESTMODE)) {
                 Configuration::updateValue(self::SETTING_ONPAY_TESTMODE, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_TESTMODE, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) === 'ONPAY_DEFAULT_WINDOW') {
+            if (Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN) === 'ONPAY_DEFAULT_WINDOW') {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, false);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN));
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) === 'ONPAY_PAYMENTWINDOW_LANGUAGE') {
+            if (Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE) === 'ONPAY_PAYMENTWINDOW_LANGUAGE') {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, false);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE));
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) === 'ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO') {
+            if (Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO) === 'ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO') {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, false);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO, Tools::getValue(self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO));
             }
 
             $cardLogos = [];
-            foreach($this->getCardLogoOptions() as $cardLogo) {
+            foreach ($this->getCardLogoOptions() as $cardLogo) {
                 if (Tools::getValue(self::SETTING_ONPAY_CARDLOGOS . '_' . $cardLogo['id_option'])) {
                     $cardLogos[] = $cardLogo['id_option'];
                 }
             }
             Configuration::updateValue(self::SETTING_ONPAY_CARDLOGOS, json_encode($cardLogos));
 
-            if(Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE)) {
+            if (Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE)) {
                 Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE, true);
             } else {
                 Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE, false);
             }
 
-            if(Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === 'ONPAY_AUTOCAPTURE_STATUS') {
+            if (Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS) === 'ONPAY_AUTOCAPTURE_STATUS') {
                 Configuration::updateValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, false);
             } else {
                 $value = Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS);
@@ -1289,8 +1323,9 @@ class onpay extends PaymentModule {
      *
      * @return array
      */
-    private function getConfigFieldsValues() {
-        $values = array(
+    private function getConfigFieldsValues()
+    {
+        $values = [
             self::SETTING_ONPAY_GATEWAY_ID => Tools::getValue(self::SETTING_ONPAY_GATEWAY_ID, Configuration::get(self::SETTING_ONPAY_GATEWAY_ID)),
             self::SETTING_ONPAY_SECRET => Tools::getValue(self::SETTING_ONPAY_SECRET, Configuration::get(self::SETTING_ONPAY_SECRET)),
             self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY => Tools::getValue(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY, Configuration::get(self::SETTING_ONPAY_EXTRA_PAYMENTS_MOBILEPAY)),
@@ -1309,7 +1344,7 @@ class onpay extends PaymentModule {
             self::SETTING_ONPAY_TESTMODE => Tools::getValue(self::SETTING_ONPAY_TESTMODE, Configuration::get(self::SETTING_ONPAY_TESTMODE)),
             self::SETTING_ONPAY_AUTOCAPTURE => Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE, Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE)),
             self::SETTING_ONPAY_AUTOCAPTURE_STATUS => Tools::getValue(self::SETTING_ONPAY_AUTOCAPTURE_STATUS, Configuration::get(self::SETTING_ONPAY_AUTOCAPTURE_STATUS)),
-        );
+        ];
 
         foreach (json_decode(Configuration::get(self::SETTING_ONPAY_CARDLOGOS), true) as $cardLogo) {
             $values[self::SETTING_ONPAY_CARDLOGOS . '_' . $cardLogo] = 'on';
@@ -1321,11 +1356,12 @@ class onpay extends PaymentModule {
     /**
      * Whether cart ID is in locked carts table
      */
-    public function isCartLocked($cartId) {
+    public function isCartLocked($cartId)
+    {
         $sql = new DbQuery();
         $sql->select('*');
         $sql->from(self::SETTING_ONPAY_LOCKEDCART_TABLE, 'lc');
-        $sql->where('lc.id_cart = ' . (int)$cartId);
+        $sql->where('lc.id_cart = ' . (int) $cartId);
         $sql->limit('1');
         $rows = Db::getInstance()->executeS($sql);
         return count($rows) > 0;
@@ -1334,41 +1370,44 @@ class onpay extends PaymentModule {
     /**
      * Adds cart ID to locked carts table
      */
-    public function lockCart($cartId) {
+    public function lockCart($cartId)
+    {
         $db = Db::getInstance();
         $db->insert(self::SETTING_ONPAY_LOCKEDCART_TABLE, [
-            'id_cart' => (int)$cartId,
+            'id_cart' => (int) $cartId,
         ]);
     }
 
     /**
      * Removes cart ID from locked carts table
      */
-    public function unlockCart($cartId) {
+    public function unlockCart($cartId)
+    {
         $db = Db::getInstance();
-        $db->delete(self::SETTING_ONPAY_LOCKEDCART_TABLE, 'id_cart = ' . (int)$cartId);
+        $db->delete(self::SETTING_ONPAY_LOCKEDCART_TABLE, 'id_cart = ' . (int) $cartId);
     }
 
     /**
      * Returns a prepared list of payment window design options.
      *
      * @return array
-     * @throws \OnPay\API\Exception\ApiException
-     * @throws \OnPay\API\Exception\ConnectionException
+     * @throws ApiException
+     * @throws ConnectionException
      */
-    private function getPaymentWindowDesignOptions() {
+    private function getPaymentWindowDesignOptions()
+    {
         try {
             $this->getOnpayClient();
         } catch (InvalidArgumentException $exception) {
-            return array();
+            return [];
         }
 
-        if(!$this->getOnpayClient()->isAuthorized()) {
+        if (!$this->getOnpayClient()->isAuthorized()) {
             return [];
         }
 
         $designs = $this->getOnpayClient()->gateway()->getPaymentWindowDesigns()->paymentWindowDesigns;
-        $options = array_map(function(\OnPay\API\Gateway\SimplePaymentWindowDesign $design) {
+        $options = array_map(function (SimplePaymentWindowDesign $design) {
             return [
                 'name' => $design->name,
                 'id' => $design->name,
@@ -1380,7 +1419,7 @@ class onpay extends PaymentModule {
         foreach ($options as $option) {
             $selectOptions[] = [
                 'id_option' => $option['id'],
-                'name' => $option['name']
+                'name' => $option['name'],
             ];
         }
 
@@ -1392,7 +1431,8 @@ class onpay extends PaymentModule {
      *
      * @return array
      */
-    private function getPaymentWindowLanguageOptions() {
+    private function getPaymentWindowLanguageOptions()
+    {
         return [
             [
                 'name' => $this->l('English'),
@@ -1442,7 +1482,8 @@ class onpay extends PaymentModule {
     }
 
     // Returns valid OnPay payment window language by Prestashop language iso
-    private function getPaymentWindowLanguageByPSLanguage($languageIso) {
+    private function getPaymentWindowLanguageByPSLanguage($languageIso)
+    {
         $languageRelations = [
             'en' => 'en',
             'es' => 'es',
@@ -1470,18 +1511,19 @@ class onpay extends PaymentModule {
 
     /**
      * Returns a list of all available statuses
-     * 
+     *
      * @return array
      */
-    private function getOrderStatuses() {
+    private function getOrderStatuses()
+    {
         $orderState = new OrderState();
         $statuses = [
             [
                 'name' => '-',
                 'id_option' => 0,
-            ]
+            ],
         ];
-        foreach($orderState->getOrderStates($this->context->language->id) as $status) {
+        foreach ($orderState->getOrderStates($this->context->language->id) as $status) {
             $statuses[] = [
                 'name' => $status['name'],
                 'id_option' => $status['id_order_state'],
@@ -1495,7 +1537,8 @@ class onpay extends PaymentModule {
      *
      * @return array
      */
-    private function getCardLogoOptions() {
+    private function getCardLogoOptions()
+    {
         return [
             [
                 'name' => $this->l('American Express/AMEX'),
@@ -1541,7 +1584,8 @@ class onpay extends PaymentModule {
      * @param $params
      * @return string
      */
-    private function generateUrl($params) {
+    private function generateUrl($params)
+    {
         if (Configuration::get('PS_SSL_ENABLED')) {
             $currentPage = 'https://';
         } else {
@@ -1555,7 +1599,8 @@ class onpay extends PaymentModule {
         return $fullUrl;
     }
 
-    private function getLatestModuleRelease() {
+    private function getLatestModuleRelease()
+    {
         $release = new Release();
 
         // If get release info from config key
@@ -1567,7 +1612,7 @@ class onpay extends PaymentModule {
                 return $release;
             }
         }
-        
+
         // Fetch release info from OnPay
         $releaseUri = 'https://api.onpay.io/plugin/release/prestashop';
         $response = $this->httpGet($releaseUri);
@@ -1600,7 +1645,8 @@ class onpay extends PaymentModule {
         return $release;
     }
 
-    private function httpGet($url) {
+    private function httpGet($url)
+    {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);

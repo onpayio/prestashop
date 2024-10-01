@@ -3,7 +3,7 @@
  * @author OnPay.io
  * @copyright 2024 OnPay.io
  * @license MIT
- * 
+ *
  * MIT License
  *
  * Copyright (c) 2024 OnPay.io
@@ -26,19 +26,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-if (!defined('_PS_VERSION_')) { exit; }
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 require_once __DIR__ . '/build/vendor/scoper-autoload.php';
 
-/**
- * Here we'll map out classes used directly in OnPay woocommerce plugin or helper classes.
- * This way we'll keep class/namespace references the same in plugin code, regardless of whether plugin is built or not.
- */
+// Here we'll map out classes used directly in OnPay woocommerce plugin or helper classes.
+// This way we'll keep class/namespace references the same in plugin code, regardless of whether plugin is built or not.
 
-/**
- * OnPay SDK classes
- */
+// OnPay SDK classes
 class_alias('PrestashopOnpay\OnPay\OnPayAPI', 'OnPay\OnPayAPI');
 
 class_alias('PrestashopOnpay\OnPay\TokenStorageInterface', 'OnPay\TokenStorageInterface');
@@ -74,7 +71,5 @@ class_alias('PrestashopOnpay\OnPay\API\Util\Link', 'OnPay\API\Util\Link');
 class_alias('PrestashopOnpay\OnPay\API\Util\Pagination', 'OnPay\API\Util\Pagination');
 class_alias('PrestashopOnpay\OnPay\API\Util\Currency', 'OnPay\API\Util\Currency');
 
-/**
- * Other Classes
- */
+// Other Classes
 class_alias('PrestashopOnpay\Alcohol\ISO4217', 'Alcohol\ISO4217');
