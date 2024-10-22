@@ -1,7 +1,11 @@
 {*
+* @author OnPay.io
+* @copyright 2024 OnPay.io
+* @license MIT
+* 
 * MIT License
 *
-* Copyright (c) 2023 OnPay.io
+* Copyright (c) 2024 OnPay.io
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +24,22 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
-*
 *}
-<div class="alert alert-warning">
-    <div class="pull-right">
-        <button class="btn btn-primary" onclick="window.location.href='{$release->getLatestDownload()}';">Download</button>
-        &nbsp;
-        <img src="{$this_path}/logo.png" height="58"/> 
+
+{if $error !== null}
+    {$error}
+{/if}
+{if not $isAuthorized}
+    <div class="panel" id="fieldset_0">
+        <div class="panel-heading">
+            <i class="icon-envelope"></i> {l s='Onpay settings' mod='onpay'}
+        </div>
+       <a href="{$authorizationUrl}" class="btn btn-default">{l s='Login with Onpay' mod='onpay'}</a>
     </div>
-    <b>{l s='An update is available for the OnPay module' mod='onpay'}</b> ({$release->getLatestVersion()})
-    <br><br>
-    <i>To install, download the module zip-file, and upload it in the <a href="{Context::getContext()->link->getAdminLink('AdminModules', true)}">Modules Manager</a></i>
-</div>  
+    {else}
+    {$form}
+    <a id="onpayRefresh" data-link="{$smarty.server.REQUEST_URI}&refresh=true" class="btn btn-default">{l s='Refresh' mod='onpay'}</a>
+    <a id="onpayLogout" data-link="{$smarty.server.REQUEST_URI}&detach=true" class="btn btn-default">{l s='Log out from OnPay' mod='onpay'}</a>
+    <br/>
+    <br/>
+{/if}

@@ -1,8 +1,12 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ *
  * MIT License
  *
- * Copyright (c) 2023 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,38 +26,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
-
-class Release {
+class Release
+{
     /**
-     * @var int $lastCheck
+     * @var int
      */
     private $lastCheck = 0;
 
     /**
-     * @var string $latestVersion
+     * @var string
      */
     private $latestVersion = '';
 
     /**
-     * @var string $latestDownload
+     * @var string
      */
     private $latestDownload = '';
 
     /**
      * @return Release
      */
-    public static function fromString(string $string) {
+    public static function fromString(string $string)
+    {
         $values = json_decode($string, true);
-        $release = new Release;
-        
-        if(array_key_exists('lastCheck', $values)) {
-            $release->setLastCheck(intval($values['lastCheck']));
+        $release = new Release();
+
+        if (array_key_exists('lastCheck', $values)) {
+            $release->setLastCheck((int) $values['lastCheck']);
         }
-        if(array_key_exists('latestVersion', $values)) {
+        if (array_key_exists('latestVersion', $values)) {
             $release->setLatestVersion($values['latestVersion']);
         }
-        if(array_key_exists('latestDownload', $values)) {
+        if (array_key_exists('latestDownload', $values)) {
             $release->setLatestDownload($values['latestDownload']);
         }
 
@@ -63,7 +71,8 @@ class Release {
     /**
      * @return string
      */
-    public function toString() {
+    public function toString()
+    {
         return json_encode([
             'lastCheck' => $this->getLastCheck(),
             'latestVersion' => $this->getLatestVersion(),
@@ -74,42 +83,48 @@ class Release {
     /**
      * @return int
      */
-    public function getLastCheck() {
+    public function getLastCheck()
+    {
         return $this->lastCheck;
     }
 
     /**
      * @param int $lastCheck
      */
-    public function setLastCheck(int $lastCheck) {
+    public function setLastCheck(int $lastCheck)
+    {
         $this->lastCheck = $lastCheck;
     }
 
     /**
      * @return string
      */
-    public function getLatestVersion() {
+    public function getLatestVersion()
+    {
         return $this->latestVersion;
     }
 
     /**
      * @param string $latestVersion
      */
-    public function setLatestVersion(string $latestVersion) {
+    public function setLatestVersion(string $latestVersion)
+    {
         $this->latestVersion = $latestVersion;
     }
 
     /**
      * @return string
      */
-    public function getLatestDownload() {
+    public function getLatestDownload()
+    {
         return $this->latestDownload;
     }
 
     /**
      * @param string $latestDownload
      */
-    public function setLatestDownload(string $latestDownload) {
+    public function setLatestDownload(string $latestDownload)
+    {
         $this->latestDownload = $latestDownload;
     }
 }

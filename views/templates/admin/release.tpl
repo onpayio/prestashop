@@ -5,7 +5,7 @@
 * 
 * MIT License
 *
-* Copyright (c) 2019 OnPay.io
+* Copyright (c) 2023 OnPay.io
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,13 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 *}
-
-<div class="onpay card-logos">
-    {foreach from=$logos item=logo}
-        <img src="{$logo}" class="onpay card-logo">
-    {/foreach}
-</div>
+<div class="alert alert-warning">
+    <div class="pull-right">
+        <button class="btn btn-primary" onclick="window.location.href='{$release->getLatestDownload()}';">Download</button>
+        &nbsp;
+        <img src="{$this_path}/logo.png" height="58"/> 
+    </div>
+    <b>{l s='An update is available for the OnPay module' mod='onpay'}</b> ({$release->getLatestVersion()})
+    <br><br>
+    <i>To install, download the module zip-file, and upload it in the <a href="{Context::getContext()->link->getAdminLink('AdminModules', true)}">Modules Manager</a></i>
+</div>  

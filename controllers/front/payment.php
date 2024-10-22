@@ -1,5 +1,9 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ *
  * MIT License
  *
  * Copyright (c) 2019 OnPay.io
@@ -22,6 +26,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+use OnPay\API\PaymentWindow;
 
 /**
  * @since 1.5.0
@@ -35,7 +44,7 @@ class OnpayPaymentModuleFrontController extends ModuleFrontController
         parent::initContent();
 
         $onpay = Module::getInstanceByName('onpay');
-        $paymentWindow = new \OnPay\API\PaymentWindow();
+        $paymentWindow = new PaymentWindow();
         $paymentWindow->setSecret(Configuration::get('ONPAY_SECRET'));
 
         if (Tools::getValue('onpay_hmac_sha1') && $paymentWindow->validatePayment(Tools::getAllValues()) && false !== Tools::getValue('accept')) {

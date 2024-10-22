@@ -1,8 +1,12 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ *
  * MIT License
  *
- * Copyright (c) 2019 OnPay.io
+ * Copyright (c) 2024 OnPay.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +26,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+use Alcohol\ISO4217;
 
 class CurrencyHelper
 {
-    /** @var ISO4217 $converter */
+    /** @var ISO4217 */
     private $converter;
 
     public function __construct()
     {
-        $this->converter = new \Alcohol\ISO4217();
+        $this->converter = new ISO4217();
     }
 
     /**
@@ -39,12 +48,13 @@ class CurrencyHelper
      * @param string $decimalSeparator
      * @return int|mixed|string
      */
-    public function minorToMajor($amount, $currency, $decimalSeparator = '.') {
+    public function minorToMajor($amount, $currency, $decimalSeparator = '.')
+    {
         $currencyConverter = (object) $this->converter->getByNumeric($currency);
-        $amount = strval($amount);
+        $amount = (string) $amount;
         if ($currencyConverter->exp > 0) {
             $newAmount = str_pad($amount, $currencyConverter->exp + 1, '0', STR_PAD_LEFT);
-            return substr_replace($newAmount, $decimalSeparator, (0 - $currencyConverter->exp), 0);
+            return substr_replace($newAmount, $decimalSeparator, 0 - $currencyConverter->exp, 0);
         }
         return $amount;
     }
@@ -55,10 +65,11 @@ class CurrencyHelper
      * @param string $separator
      * @return int
      */
-    public function majorToMinor($amount, $currency, $separator) {
+    public function majorToMinor($amount, $currency, $separator)
+    {
         $currencyConverter = (object) $this->converter->getByNumeric($currency);
         $fraction = '';
-        for ($i = 0; $i < $currencyConverter->exp; $i++) {
+        for ($i = 0; $i < $currencyConverter->exp; ++$i) {
             $fraction .= '0';
         }
         $amountArr = explode($separator, $amount);
@@ -67,28 +78,29 @@ class CurrencyHelper
             $amountFraction = substr($amountArr[1], 0, $currencyConverter->exp);
             $fraction = substr_replace($fraction, $amountFraction, 0, strlen($amountFraction));
         }
-        return intval($integer . $fraction);
+        return (int) $integer . $fraction;
     }
 
     /**
      * @param $numeric
      * @return object
      */
-    public function fromNumeric($numeric) {
+    public function fromNumeric($numeric)
+    {
         // We'll add missing trailing zeroes.
-        $numeric = (string)$numeric;
+        $numeric = (string) $numeric;
         $currencyNumeric = $numeric;
         if (1 === strlen($numeric)) {
             $currencyNumeric = '00' . $numeric;
-        } else if (2 === strlen($numeric)) {
+        } elseif (2 === strlen($numeric)) {
             $currencyNumeric = '0' . $numeric;
         }
 
         try {
-            return (object)$this->converter->getByNumeric($currencyNumeric);
-        } catch(\DomainException $e) {
+            return (object) $this->converter->getByNumeric($currencyNumeric);
+        } catch (DomainException $e) {
             return null;
-        } catch(\OutOfBoundsException $e) {
+        } catch (OutOfBoundsException $e) {
             return null;
         }
     }

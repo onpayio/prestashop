@@ -1,4 +1,8 @@
 {*
+* @author OnPay.io
+* @copyright 2024 OnPay.io
+* @license MIT
+* 
 * MIT License
 *
 * Copyright (c) 2019 OnPay.io
@@ -20,23 +24,23 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
-*
 *}
 
-{if $error !== null}
-    {$error|unescape: 'html'}
-{/if}
-{if not $isAuthorized}
-    <div class="panel" id="fieldset_0">
-        <div class="panel-heading">
-            <i class="icon-envelope"></i> {l s='Onpay settings' mod='onpay'}
-        </div>
-       <a href="{$authorizationUrl}" class="btn btn-default">{l s='Login with Onpay' mod='onpay'}</a>
-    </div>
-    {else}
-    {$form|unescape: 'html' }
-    <a id="onpayRefresh" data-link="{$smarty.server.REQUEST_URI}&refresh=true" class="btn btn-default">{l s='Refresh' mod='onpay'}</a>
-    <a id="onpayLogout" data-link="{$smarty.server.REQUEST_URI}&detach=true" class="btn btn-default">{l s='Log out from OnPay' mod='onpay'}</a>
-    <br/>
-    <br/>
-{/if}
+<style type="text/css">
+    {if isset($apple_id)}
+        #{$apple_id}-container {literal}{display:none}{/literal}
+        #{$apple_id}-container.show {literal}{display:inherit}{/literal}
+    {/if}
+    {if isset($google_id)}
+        #{$google_id}-container {literal}{display:none}{/literal}
+        #{$google_id}-container.show {literal}{display:inherit}{/literal}
+    {/if}
+</style>
+<script type="text/javascript">
+    {if isset($apple_id)}
+        let appleId="{$apple_id}";
+    {/if}
+    {if isset($google_id)}
+        let googleId="{$google_id}";
+    {/if}
+</script>

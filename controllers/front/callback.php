@@ -1,5 +1,9 @@
 <?php
 /**
+ * @author OnPay.io
+ * @copyright 2024 OnPay.io
+ * @license MIT
+ *
  * MIT License
  *
  * Copyright (c) 2024 OnPay.io
@@ -22,13 +26,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+use OnPay\API\PaymentWindow;
 
 class OnpayCallbackModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {
         $onpay = Module::getInstanceByName('onpay');
-        $paymentWindow = new \OnPay\API\PaymentWindow();
+        $paymentWindow = new PaymentWindow();
         $paymentWindow->setSecret(Configuration::get(Onpay::SETTING_ONPAY_SECRET));
 
         $onpayUuid = Tools::getValue('onpay_uuid');
@@ -56,8 +65,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         if (!Validate::isLoadedObject($customer)) {
             $this->jsonResponse('Invalid customer', true, 500);
         }
-        $context->customer = $customer;        
-        
+        $context->customer = $customer;
+
         // Set currency from callback
         $currencyId = Currency::getIdByNumericIsoCode($onpayCurrency);
         $currency = new Currency($currencyId);
@@ -88,8 +97,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
             // Extract paid amount in major units
             $currencyHelper = new CurrencyHelper();
-            $amountPaid = $currencyHelper->minorToMajor(intval($onpayAmount), $currency->iso_code_num);
-            
+            $amountPaid = $currencyHelper->minorToMajor((int) $onpayAmount, $currency->iso_code_num);
+
             $this->module->validateOrder(
                 $cart->id,
                 Configuration::get('PS_OS_PAYMENT'),
@@ -98,7 +107,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
                 null,
                 [
                     'transaction_id' => $onpayUuid,
-                    'card_brand' => Tools::getValue('onpay_cardtype')
+                    'card_brand' => Tools::getValue('onpay_cardtype'),
                 ],
                 $currency->id,
                 false,
@@ -112,7 +121,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         $this->jsonResponse('Order validated');
     }
 
-    private function jsonResponse($message, $error = false, $responseCode = 200) {
+    private function jsonResponse($message, $error = false, $responseCode = 200)
+    {
         header('Content-Type: application/json', true, $responseCode);
         $response = [];
         if (!$error) {
@@ -120,6 +130,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         } else {
             $response = ['error' => $message];
         }
-        die(json_encode($response));
+        echo json_encode($response);
+        exit;
     }
 }
