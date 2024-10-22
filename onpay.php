@@ -381,7 +381,6 @@ class onpay extends PaymentModule
      */
     public function hookDisplayBeforeBodyClosingTag()
     {
-        $return = '';
         // If either Apple Pay or Google Pay is enabled, register frontend script for managing these.
         if ($this->showGAPay()) {
             $appleId = null;
@@ -402,27 +401,15 @@ class onpay extends PaymentModule
                 }
             }
 
-            // Prepare Google and Apple Pay entries, add variable for IDs and hide inputs
-            $return = '<style type="text/css">';
-            if (null !== $appleId) {
-                $return .= '#' . $appleId . '-container {display:none}';
-                $return .= '#' . $appleId . '-container.show {display:inherit}';
+            if (null !== $appleId || null !== $googleId) {
+                $this->smarty->assign([
+                    'apple_id' => $appleId,
+                    'google_id' => $googleId,
+                ]);
+                return $this->display(__FILE__, 'views/templates/front/ga_pay.tpl');
             }
-            if (null !== $googleId) {
-                $return .= '#' . $googleId . '-container {display:none}';
-                $return .= '#' . $googleId . '-container.show {display:inherit}';
-            }
-            $return .= '</style>';
-            $return .= '<script type="text/javascript">';
-            if (null !== $appleId) {
-                $return .= 'let appleId="' . $appleId . '";';
-            }
-            if (null !== $googleId) {
-                $return .= 'let googleId="' . $googleId . '";';
-            }
-            $return .= '</script>';
         }
-        return $return;
+        return '';
     }
 
     private function showGAPay()
@@ -964,6 +951,12 @@ class onpay extends PaymentModule
     {
         $fields_form = [
             'form' => [
+                'tabs' => [
+                    'window' => $this->l('Payment window'),
+                    'methods' => $this->l('Payment methods'),
+                    'backoffice' => $this->l('Automatic capture'),
+                    'info' => $this->l('Gateway information'),
+                ],
                 'legend' => [
                     'title' => $this->l('OnPay settings'),
                     'icon' => 'icon-envelope',
@@ -973,7 +966,8 @@ class onpay extends PaymentModule
                 'input' => [
                     [
                         'type' => 'checkbox',
-                        'label' => $this->l('Payment methods'),
+                        'tab' => 'methods',
+                        'label' => $this->l('Available methods'),
                         'name' => 'ONPAY_EXTRA_PAYMENTS',
                         'required' => false,
                         'values' => [
@@ -1033,14 +1027,9 @@ class onpay extends PaymentModule
                             'name' => 'name',
                         ],
                     ],
-
-                    [
-                        'type' => 'legend',
-                        'label' => '<br /><h3>' . $this->l('Payment window') . '</h3>',
-                        'name' => 'ONPAY_PAYMENTWINDOW_SETTINGS',
-                    ],
                     [
                         'type' => 'switch',
+                        'tab' => 'window',
                         'label' => $this->l('Test Mode'),
                         'name' => self::SETTING_ONPAY_TESTMODE,
                         'required' => false,
@@ -1059,6 +1048,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'select',
+                        'tab' => 'window',
                         'lang' => true,
                         'label' => $this->l('Payment window design'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_DESIGN,
@@ -1070,6 +1060,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'select',
+                        'tab' => 'window',
                         'lang' => true,
                         'label' => $this->l('Payment window language'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE,
@@ -1081,6 +1072,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'switch',
+                        'tab' => 'window',
                         'label' => $this->l('Automatic payment window language'),
                         'desc' => $this->l('Overrides language chosen above, and instead determines payment window language based on frontoffice language'),
                         'name' => self::SETTING_ONPAY_PAYMENTWINDOW_LANGUAGE_AUTO,
@@ -1098,6 +1090,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'checkbox',
+                        'tab' => 'window',
                         'label' => $this->l('Card logos'),
                         'desc' => $this->l('Card logos shown for the Card payment method'),
                         'name' => self::SETTING_ONPAY_CARDLOGOS,
@@ -1106,21 +1099,10 @@ class onpay extends PaymentModule
                             'id' => 'id_option',
                             'name' => 'name',
                         ],
-                        'expand' => [
-                            ['print_total' => count($this->getCardLogoOptions())],
-                            'default' => 'show',
-                            'show' => ['text' => $this->l('Show'), 'icon' => 'plus-sign-alt'],
-                            'hide' => ['text' => $this->l('Hide'), 'icon' => 'minus-sign-alt'],
-                        ],
-                    ],
-
-                    [
-                        'type' => 'legend',
-                        'label' => '<br /><h3>' . $this->l('Backoffice settings') . '</h3>',
-                        'name' => 'ONPAY_BACKOFFICE_SETTINGS',
                     ],
                     [
                         'type' => 'switch',
+                        'tab' => 'backoffice',
                         'label' => $this->l('Automatic capture'),
                         'desc' => $this->l('Automatically capture remaining amounts on transactions, when orders are marked with status chosen below.'),
                         'name' => self::SETTING_ONPAY_AUTOCAPTURE,
@@ -1140,6 +1122,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'select',
+                        'tab' => 'backoffice',
                         'lang' => true,
                         'label' => $this->l('Automatic capture status'),
                         'desc' => $this->l('Status that triggers automatic capture of transaction, if enabled above.'),
@@ -1150,14 +1133,9 @@ class onpay extends PaymentModule
                             'name' => 'name',
                         ],
                     ],
-
-                    [
-                        'type' => 'legend',
-                        'label' => '<br /><h3>' . $this->l('Gateway information') . '</h3>',
-                        'name' => 'ONPAY_GATEWAY_INFO',
-                    ],
                     [
                         'type' => 'text',
+                        'tab' => 'info',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Gateway ID'),
@@ -1165,6 +1143,7 @@ class onpay extends PaymentModule
                     ],
                     [
                         'type' => 'text',
+                        'tab' => 'info',
                         'readonly' => true,
                         'class' => 'fixed-width-xl',
                         'label' => $this->l('Window secret'),
