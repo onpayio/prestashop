@@ -102,7 +102,7 @@ class onpay extends PaymentModule
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
         $this->version = '1.0.19';
-        $this->ps_versions_compliancy = ['min' => '1.7.0.1', 'max' => _PS_VERSION_];
+        $this->ps_versions_compliancy = ['min' => '1.7.7.0', 'max' => _PS_VERSION_];
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
         $this->controllers = ['payment', 'callback'];
@@ -133,7 +133,6 @@ class onpay extends PaymentModule
         $hooks = [
             1 => [
                 'paymentOptions',
-                'adminOrder',
             ],
             2 => [
                 'actionFrontControllerSetMedia',
@@ -604,21 +603,6 @@ class onpay extends PaymentModule
                 }
             }
         }
-    }
-
-    /**
-     * Actions on order page
-     * @param $params
-     * @return mixed
-     */
-    public function hookAdminOrder($params)
-    {
-        if (in_array('displayAdminOrderMainBottom', Hook::$executed_hooks)) {
-            // If hook displayAdminOrderMainBottom is executed, no need to do anything here, since the displayAdminOrder hook is used for legacy.
-            return;
-        }
-
-        return $this->handleAdminOrderHook('views/templates/admin/order_details_legacy.tpl', $params);
     }
 
     private function handleAdminOrderHook($template, $params)
