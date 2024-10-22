@@ -97,7 +97,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
 
             // Extract paid amount in major units
             $currencyHelper = new CurrencyHelper();
-            $amountPaid = $currencyHelper->minorToMajor(intval($onpayAmount), $currency->iso_code_num);
+            $amountPaid = $currencyHelper->minorToMajor((int) $onpayAmount, $currency->iso_code_num);
 
             $this->module->validateOrder(
                 $cart->id,
