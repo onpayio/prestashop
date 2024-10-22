@@ -27,7 +27,7 @@
 *}
 
 {if $error !== null}
-    {$error|unescape: 'html'}
+    {$error}
 {/if}
 {if not $isAuthorized}
     <div class="panel" id="fieldset_0">
@@ -37,7 +37,7 @@
        <a href="{$authorizationUrl}" class="btn btn-default">{l s='Login with Onpay' mod='onpay'}</a>
     </div>
     {else}
-    {$form|unescape: 'html' }
+    {$form}
     <a id="onpayRefresh" data-link="{$smarty.server.REQUEST_URI}&refresh=true" class="btn btn-default">{l s='Refresh' mod='onpay'}</a>
     <a id="onpayLogout" data-link="{$smarty.server.REQUEST_URI}&detach=true" class="btn btn-default">{l s='Log out from OnPay' mod='onpay'}</a>
     <br/>
