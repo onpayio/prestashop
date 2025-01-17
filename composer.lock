@@ -64,78 +64,25 @@
             "time": "2019-10-30T10:03:42+00:00"
         },
         {
-            "name": "onpayio/oauth2-client",
-            "version": "7.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/onpayio/php-oauth2-client.git",
-                "reference": "e97fd6d5868a1ca9af715ae83d1991b4f880745f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-oauth2-client/zipball/e97fd6d5868a1ca9af715ae83d1991b4f880745f",
-                "reference": "e97fd6d5868a1ca9af715ae83d1991b4f880745f",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*",
-                "ext-date": "*",
-                "ext-hash": "*",
-                "ext-json": "*",
-                "ext-pcre": "*",
-                "ext-pdo": "*",
-                "ext-session": "*",
-                "ext-spl": "*",
-                "paragonie/constant_time_encoding": "^1|^2",
-                "paragonie/random_compat": ">=1",
-                "php": ">=5.4",
-                "psr/log": "^1.0",
-                "symfony/polyfill-php56": "^1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8.35|^5|^6|^7"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "fkooman\\OAuth\\Client\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "François Kooman",
-                    "email": "fkooman@tuxed.net"
-                }
-            ],
-            "description": "Very simple OAuth 2.0 client",
-            "support": {
-                "email": "fkooman@tuxed.net",
-                "source": "https://git.tuxed.net/fkooman/php-oauth2-client"
-            },
-            "time": "2020-04-25T09:56:27+00:00"
-        },
-        {
             "name": "onpayio/php-sdk",
-            "version": "1.0.30",
+            "version": "1.0.32",
             "source": {
                 "type": "git",
                 "url": "https://github.com/onpayio/php-sdk.git",
-                "reference": "153966d6ef3b5b44accaeb9f74e8e6b91ad1d61c"
+                "reference": "ee5c0a644d19ff1977e43e20c18d08409e563fa5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/153966d6ef3b5b44accaeb9f74e8e6b91ad1d61c",
-                "reference": "153966d6ef3b5b44accaeb9f74e8e6b91ad1d61c",
+                "url": "https://api.github.com/repos/onpayio/php-sdk/zipball/ee5c0a644d19ff1977e43e20c18d08409e563fa5",
+                "reference": "ee5c0a644d19ff1977e43e20c18d08409e563fa5",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "onpayio/oauth2-client": "^7.1",
                 "php": ">=5.6"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.4"
             },
             "type": "library",
             "autoload": {
@@ -151,341 +98,19 @@
             "homepage": "https://github.com/onpayio/php-sdk",
             "support": {
                 "issues": "https://github.com/onpayio/php-sdk/issues",
-                "source": "https://github.com/onpayio/php-sdk/tree/1.0.30"
+                "source": "https://github.com/onpayio/php-sdk/tree/1.0.32"
             },
-            "time": "2024-08-05T07:28:59+00:00"
-        },
-        {
-            "name": "paragonie/constant_time_encoding",
-            "version": "v1.0.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/paragonie/constant_time_encoding.git",
-                "reference": "2132f0f293d856026d7d11bd81b9f4a23a1dc1f6"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/2132f0f293d856026d7d11bd81b9f4a23a1dc1f6",
-                "reference": "2132f0f293d856026d7d11bd81b9f4a23a1dc1f6",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.3|^7"
-            },
-            "require-dev": {
-                "paragonie/random_compat": "^1.4|^2",
-                "phpunit/phpunit": "4.*|5.*",
-                "vimeo/psalm": "^0.3|^1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "ParagonIE\\ConstantTime\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Paragon Initiative Enterprises",
-                    "email": "security@paragonie.com",
-                    "homepage": "https://paragonie.com",
-                    "role": "Maintainer"
-                },
-                {
-                    "name": "Steve 'Sc00bz' Thomas",
-                    "email": "steve@tobtu.com",
-                    "homepage": "https://www.tobtu.com",
-                    "role": "Original Developer"
-                }
-            ],
-            "description": "Constant-time Implementations of RFC 4648 Encoding (Base-64, Base-32, Base-16)",
-            "keywords": [
-                "base16",
-                "base32",
-                "base32_decode",
-                "base32_encode",
-                "base64",
-                "base64_decode",
-                "base64_encode",
-                "bin2hex",
-                "encoding",
-                "hex",
-                "hex2bin",
-                "rfc4648"
-            ],
-            "support": {
-                "email": "info@paragonie.com",
-                "issues": "https://github.com/paragonie/constant_time_encoding/issues",
-                "source": "https://github.com/paragonie/constant_time_encoding"
-            },
-            "time": "2018-04-30T17:57:16+00:00"
-        },
-        {
-            "name": "paragonie/random_compat",
-            "version": "v2.0.20",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/paragonie/random_compat.git",
-                "reference": "0f1f60250fccffeaf5dda91eea1c018aed1adc2a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/random_compat/zipball/0f1f60250fccffeaf5dda91eea1c018aed1adc2a",
-                "reference": "0f1f60250fccffeaf5dda91eea1c018aed1adc2a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.2.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "4.*|5.*"
-            },
-            "suggest": {
-                "ext-libsodium": "Provides a modern crypto API that can be used to generate random bytes."
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "lib/random.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Paragon Initiative Enterprises",
-                    "email": "security@paragonie.com",
-                    "homepage": "https://paragonie.com"
-                }
-            ],
-            "description": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7",
-            "keywords": [
-                "csprng",
-                "polyfill",
-                "pseudorandom",
-                "random"
-            ],
-            "support": {
-                "email": "info@paragonie.com",
-                "issues": "https://github.com/paragonie/random_compat/issues",
-                "source": "https://github.com/paragonie/random_compat"
-            },
-            "time": "2021-04-17T09:33:01+00:00"
-        },
-        {
-            "name": "psr/log",
-            "version": "1.1.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-fig/log.git",
-                "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/d49695b909c3b7628b6289db5479a1c204601f11",
-                "reference": "d49695b909c3b7628b6289db5479a1c204601f11",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Psr\\Log\\": "Psr/Log/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "PHP-FIG",
-                    "homepage": "https://www.php-fig.org/"
-                }
-            ],
-            "description": "Common interface for logging libraries",
-            "homepage": "https://github.com/php-fig/log",
-            "keywords": [
-                "log",
-                "psr",
-                "psr-3"
-            ],
-            "support": {
-                "source": "https://github.com/php-fig/log/tree/1.1.4"
-            },
-            "time": "2021-05-03T11:20:27+00:00"
-        },
-        {
-            "name": "symfony/polyfill-php56",
-            "version": "v1.19.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/polyfill-php56.git",
-                "reference": "ea19621731cbd973a6702cfedef3419768bf3372"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php56/zipball/ea19621731cbd973a6702cfedef3419768bf3372",
-                "reference": "ea19621731cbd973a6702cfedef3419768bf3372",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.3",
-                "symfony/polyfill-util": "~1.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.19-dev"
-                },
-                "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Polyfill\\Php56\\": ""
-                },
-                "files": [
-                    "bootstrap.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Nicolas Grekas",
-                    "email": "p@tchwork.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Symfony polyfill backporting some PHP 5.6+ features to lower PHP versions",
-            "homepage": "https://symfony.com",
-            "keywords": [
-                "compatibility",
-                "polyfill",
-                "portable",
-                "shim"
-            ],
-            "support": {
-                "source": "https://github.com/symfony/polyfill-php56/tree/v1.19.0"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2020-10-23T09:01:57+00:00"
-        },
-        {
-            "name": "symfony/polyfill-util",
-            "version": "v1.19.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/polyfill-util.git",
-                "reference": "8df0c3e6a4b85df9a5c6f3f2f46fba5c5c47058a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-util/zipball/8df0c3e6a4b85df9a5c6f3f2f46fba5c5c47058a",
-                "reference": "8df0c3e6a4b85df9a5c6f3f2f46fba5c5c47058a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.3"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.19-dev"
-                },
-                "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Polyfill\\Util\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Nicolas Grekas",
-                    "email": "p@tchwork.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Symfony utilities for portability of PHP codes",
-            "homepage": "https://symfony.com",
-            "keywords": [
-                "compat",
-                "compatibility",
-                "polyfill",
-                "shim"
-            ],
-            "support": {
-                "source": "https://github.com/symfony/polyfill-util/tree/v1.19.0"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2020-10-21T09:57:48+00:00"
+            "time": "2025-01-15T09:26:24+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "platform-overrides": {
         "php": "7.1"
     },
