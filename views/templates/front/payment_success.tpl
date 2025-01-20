@@ -43,8 +43,23 @@
                     <p>
                         <b>{l s='The payment was successful, and is awaiting processing.' mod='onpay'}</b><br/><br/>
                         {l s='An email has been sent to your mail address %email%.' d='Shop.Theme.Checkout' sprintf=['%email%' => $customer.email]}<br/><br/>
+                        
+                        {if $order.details.invoice_url}
+                            {* [1][/1] is for a HTML tag. *}
+                            {l
+                                s='You can also [1]download your invoice[/1]'
+                                d='Shop.Theme.Checkout'
+                                sprintf=[
+                                    '[1]' => "<a href='{$order.details.invoice_url}'>",
+                                    '[/1]' => "</a>"
+                                ]
+                            }
+                        {/if}
                     </p>
 
+                    {block name='hook_order_confirmation'}
+                        {$HOOK_ORDER_CONFIRMATION nofilter}
+                    {/block}
 
                     <p class="cart_navigation clearfix">
                         <a class="button-exclusive btn btn-primary btn-lg" href="{$link->getPageLink('history', true)|escape:'html':'UTF-8'}" title="{l s='Go to orders' mod='onpay'}">
