@@ -44,6 +44,8 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
         $onpayReference = Tools::getValue('onpay_reference');
         $onpayAmount = Tools::getValue('onpay_amount');
         $onpayCurrency = Tools::getValue('onpay_currency');
+        $onpayMethod = Tools::getValue('onpay_method');
+        $onpayCardType = Tools::getValue('onpay_cardtype');
 
         // Validate query parameters and check that onpay_number is present
         if (!$paymentWindow->validatePayment(Tools::getAllValues()) || false === $onpayUuid) {
@@ -99,11 +101,17 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $currencyHelper = new CurrencyHelper();
             $amountPaid = $currencyHelper->minorToMajor((int) $onpayAmount, $currency->iso_code_num);
 
+            $method = 'OnPay';
+            if ('card' === $onpayMethod && false !== $onpayCardType) {
+                // If card type is provided, append to method name
+                $method .= ' - ' . ucfirst($onpayCardType);
+            }
+
             $this->module->validateOrder(
                 $cart->id,
                 Configuration::get('PS_OS_PAYMENT'),
                 $amountPaid,
-                'OnPay',
+                $method,
                 null,
                 [
                     'transaction_id' => $onpayUuid,

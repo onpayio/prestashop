@@ -590,7 +590,7 @@ class onpay extends PaymentModule
             // Loop over payments on order
             foreach ($payments as $payment) {
                 // Check if order payment method is OnPay
-                if ($payment->payment_method === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                if (substr($payment->payment_method, 0 , 5) === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $transaction = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
                     // If transaction has status active, and charged amount is less than the full amount, we'll capture the remaining amount on transaction
                     if ($transaction->status === 'active' && $transaction->charged < $transaction->amount) {
@@ -672,7 +672,7 @@ class onpay extends PaymentModule
 
         try {
             foreach ($payments as $payment) {
-                if ($payment->payment_method === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                if (substr($payment->payment_method, 0 , 5) === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $onpayInfo = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
                     $amount = $this->currencyHelper->minorToMajor($onpayInfo->amount, $onpayInfo->currencyCode, ',');
                     $chargable = $onpayInfo->amount - $onpayInfo->charged;
