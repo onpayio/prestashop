@@ -1,4 +1,4 @@
-# OnPay - Prestashop 1.7/8.X module
+# OnPay - Prestashop 8.X/9.X module
 
 Module for Prestashop webshop platform, based on the official OnPay PHP SDK.
 The module adds the following functionality to Prestashop:
