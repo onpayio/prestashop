@@ -7,7 +7,7 @@ The module adds the following functionality to Prestashop:
 - Management of transaction on order pages in backoffice.
 
 The module is tested and confirmed working on 
-- Prestashop v. 1.7.8.8 and v. 8.0.1
+- Prestashop v. 8.2.1 and v. 9.0.0
 
 ## Usage
 1. Install module as any other Prestashop module.

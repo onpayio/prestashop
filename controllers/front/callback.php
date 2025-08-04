@@ -89,11 +89,11 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $this->jsonResponse('Payment module unavailable', true, 403);
         }
 
-        // Get orderId
-        $orderId = OrderCore::getOrderByCartId($cart->id);
+        // Get order
+        $order = Order::getByCartId($cart->id);
 
         // Check that order is not yet created, or in process of creation.
-        if ($orderId === false && !$onpay->isCartLocked($cart->id)) {
+        if (null === $order && !$onpay->isCartLocked($cart->id)) {
             // Lock cart while creating order
             $onpay->lockCart($cart->id);
 
