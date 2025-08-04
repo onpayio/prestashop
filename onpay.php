@@ -102,7 +102,7 @@ class onpay extends PaymentModule
         $this->name = 'onpay';
         $this->tab = 'payments_gateways';
         $this->version = '1.0.20';
-        $this->ps_versions_compliancy = ['min' => '1.7.7.0', 'max' => _PS_VERSION_];
+        $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
         $this->author = 'OnPay.io';
         $this->need_instance = 0;
         $this->controllers = ['payment', 'callback'];
@@ -302,14 +302,17 @@ class onpay extends PaymentModule
 
         if ('true' === Tools::getValue('detach')) {
             $params = [];
-            $params['token'] = Tools::getAdminTokenLite('AdminModules');
+            // Add security token ,if PS version is less than 9
+            if (version_compare(_PS_VERSION_, '9.0.0', '<')) {
+                $params['token'] = Tools::getAdminTokenLite('AdminModules');
+            }
             $params['controller'] = 'AdminModules';
             $params['configure'] = 'onpay';
             $params['tab_module'] = 'payments_gateways';
             $params['module_name'] = 'onpay';
             $url = $this->generateUrl($params);
             Configuration::deleteByName(self::SETTING_ONPAY_TOKEN);
-            return Tools::redirectLink($url);
+            return Tools::redirect($url);
         }
 
         $onpayApi = $this->getOnpayClient(true);
@@ -740,7 +743,10 @@ class onpay extends PaymentModule
         $params = [];
         // AdminToken cannot be generated on payment pages
         if ($prepareRedirectUri) {
-            $params['token'] = Tools::getAdminTokenLite('AdminModules');
+            // Add security token ,if PS version is less than 9
+            if (version_compare(_PS_VERSION_, '9.0.0', '<')) {
+                $params['token'] = Tools::getAdminTokenLite('AdminModules');
+            }
             $params['controller'] = 'AdminModules';
             $params['configure'] = 'onpay';
             $params['tab_module'] = 'payments_gateways';

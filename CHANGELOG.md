@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Add card brand name to method name if method is card.
 - Updated SDK version, to new release independent of Oauth2 client.
+- Added support for Prestashop 9
 
 ## [1.0.20] - 2024-10-28
 - Removed usage of AdminOrder hook, to ensure compatability with prestashop 8.2.
