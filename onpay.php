@@ -91,6 +91,7 @@ class onpay extends PaymentModule
     const SETTING_ONPAY_LOCKEDCART_TABLE = 'onpay_locked_cart';
     const SETTING_ONPAY_LOCKEDCART_TABLE_CREATED = 'ONPAY_LOCKEDCART_CREATED';
     const SETTING_ONPAY_RELEASE_INFO = 'ONPAY_RELEASE_INFO';
+    const PAYMENT_METHOD_PREFIX = 'OnPay';
 
     protected $htmlContent = '';
 
@@ -616,7 +617,7 @@ class onpay extends PaymentModule
             // Loop over payments on order
             foreach ($payments as $payment) {
                 // Check if order payment method is OnPay
-                if (substr($payment->payment_method, 0 , 5) === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                if (strpos($payment->payment_method, self::PAYMENT_METHOD_PREFIX) === 0 && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $transaction = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
                     // If transaction has status active, and charged amount is less than the full amount, we'll capture the remaining amount on transaction
                     if ($transaction->status === 'active' && $transaction->charged < $transaction->amount) {
@@ -642,7 +643,7 @@ class onpay extends PaymentModule
             // Loop over payments on order
             foreach ($payments as $payment) {
                 // Check if order payment method is OnPay
-                if (substr($payment->payment_method, 0, 5) === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                if (strpos($payment->payment_method, self::PAYMENT_METHOD_PREFIX) === 0 && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $transaction = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
                     // Only attempt to cancel transactions that are still active
                     if ($transaction->status === 'active') {
@@ -724,7 +725,7 @@ class onpay extends PaymentModule
 
         try {
             foreach ($payments as $payment) {
-                if (substr($payment->payment_method, 0 , 5) === 'OnPay' && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
+                if (strpos($payment->payment_method, self::PAYMENT_METHOD_PREFIX) === 0 && null !== $payment->transaction_id && '' !== $payment->transaction_id) {
                     $onpayInfo = $onPayAPI->transaction()->getTransaction($payment->transaction_id);
                     $amount = $this->currencyHelper->minorToMajor($onpayInfo->amount, $onpayInfo->currencyCode, ',');
                     $chargable = $onpayInfo->amount - $onpayInfo->charged;
