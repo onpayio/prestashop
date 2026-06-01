@@ -42,3 +42,29 @@ $(document).on('click', '#onpayCancel', function(e) {
         $(this).click();
     }
 });
+
+/**
+ * Per-method description fields
+ */
+$(function() {
+    var $descriptions = $('input[name$="_DESCRIPTION"]');
+    if (!$descriptions.length) {
+        return;
+    }
+    $descriptions.each(function() {
+        var $input = $(this);
+        var sourceName = $input.attr('name').replace(/_DESCRIPTION$/, '');
+        var $source = $('input[name="' + sourceName + '"]');
+        if (!$source.length) {
+            return;
+        }
+        var $row = $input.closest('.form-group');
+        var update = function() {
+            var $checked = $source.filter(':checked');
+            var enabled = $checked.length > 0 && String($checked.val()) === '1';
+            $row.toggle(enabled);
+        };
+        update();
+        $source.on('change', update);
+    });
+});
