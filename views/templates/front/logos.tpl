@@ -26,6 +26,9 @@
 * SOFTWARE.
 *}
 
+{if isset($description) && $description != ''}
+    <div class="onpay method-description">{$description}</div>
+{/if}
 <div class="onpay card-logos">
     {foreach from=$logos item=logo}
         <img src="{$logo}" class="onpay card-logo">

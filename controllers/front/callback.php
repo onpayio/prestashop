@@ -101,7 +101,7 @@ class OnpayCallbackModuleFrontController extends ModuleFrontController
             $currencyHelper = new CurrencyHelper();
             $amountPaid = $currencyHelper->minorToMajor((int) $onpayAmount, $currency->iso_code_num);
 
-            $method = 'OnPay';
+            $method = Onpay::PAYMENT_METHOD_PREFIX;
             if ('card' === $onpayMethod && false !== $onpayCardType) {
                 // If card type is provided, append to method name
                 $method .= ' - ' . ucfirst($onpayCardType);
