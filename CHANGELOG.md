@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Added SECURITY.md
+- Added description fields per method
+- Added Icelandic as a language option
+- Added Automatic cancel
+- Changed settings structure
 
 ## [1.0.21] - 2025-08-04
 - Add card brand name to method name if method is card.
