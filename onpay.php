@@ -137,9 +137,9 @@ class onpay extends PaymentModule
     private function registerHooks()
     {
         $hookVersion = 6;
-        $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, 0);
+        $currentHookVersion = Configuration::get(self::SETTING_ONPAY_HOOK_VERSION, null, null, null, false);
 
-        if ($currentHookVersion >= $hookVersion) {
+        if ($currentHookVersion === false || $currentHookVersion >= $hookVersion) {
             return;
         }
 
