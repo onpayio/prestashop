@@ -1,0 +1,5 @@
+# CI job definitions live in the ci-tooling project.
+include:
+  - project: '$CI_PROJECT_NAMESPACE/ci-tooling'
+    ref: main
+    file: '$CI_PROJECT_NAME.gitlab-ci.yml'
